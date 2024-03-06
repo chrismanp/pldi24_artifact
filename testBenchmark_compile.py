@@ -20,7 +20,7 @@ from parse_lazybenchmark_csv import parse_csv
 
 
 results_file_categories = ["BENCHMARK", "COMPILES", "DATASET", "NUM CORES",
-                           "STATUS", "PARALLEL_FRAMEWORK", "TASK_SCHEDULER", "PFOR_MAXGRAINSIZE", "IGNORE_USERS_PFORGRAINSIZE", "TIME(sec)", "ERROR MSG"]
+                           "STATUS", "USE_NUMA", "PARALLEL_FRAMEWORK", "TASK_SCHEDULER", "PFOR_MAXGRAINSIZE", "IGNORE_USERS_PFORGRAINSIZE", "TIME(sec)", "ERROR MSG"]
 
 class ColName(IntEnum):
     BENCHMARK = 0;
@@ -31,7 +31,7 @@ class ColName(IntEnum):
     USE_NUMA=5
     PARALLEL_FRAMEWORK = 6
     TASK_SCHEDULER = 7
-    PFORMAXGRAINSIZE = 9
+    PFORMAXGRAINSIZE = 8
     IGNORE_USER_PFORGAINSIZE = 9
     TIME = 10
     ERROR_MSG = 11
@@ -742,6 +742,7 @@ def execute_benchmark(benchmark_obj, lazy_benchmark_options, csv_writer, csv_fil
 
         # Run the benchmark
         run_status, run_time = run_benchmark(lazy_benchmark_options, benchmark_obj, num_cores, output_file, data_set)
+        row[int(ColName.STATUS)] = get_run_status_str(run_status)
         if run_status == RunStatus.CORRECT:
             check_status = run_check_benchmark(benchmark_obj, output_file, data_set)
             if check_status == RunStatus.CORRECT:
@@ -752,7 +753,6 @@ def execute_benchmark(benchmark_obj, lazy_benchmark_options, csv_writer, csv_fil
                 row[start_row] = "N/A"
 
         else:
-            row[int(ColName.STATUS)] = get_run_status_str(run_status)
             row[start_row] = "N/A"
             break
 
