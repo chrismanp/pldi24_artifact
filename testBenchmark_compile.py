@@ -77,7 +77,7 @@ class LazyBenchmarkOptions(object):
         self.measure_icache = measure_icache
         self.measure_promotedtask = measure_promotedtask
         self.disable_numa = disable_numa
-        
+
 # Gets string representation of run status.
 def get_run_status_str(run_status):
     if run_status == RunStatus.CORRECT:
@@ -203,11 +203,11 @@ def compile_benchmark_cilk5(lazy_benchmark_options, use_dac, benchmark_obj, outp
     p_compile = subprocess.Popen(compile_cmd, shell=True, stdout=subprocess.PIPE)
     try:
         out, err = p_compile.communicate(compilation_timeout)
-        if (err != None):
-            error_string = get_error_string(err)
-            logging.warning("\n" + error_string + "\n")
+        logging.debug(str(out))
+        logging.warning(str(err))
+        if ("Error" in str(out)):
             logging.warning("\nCompilation failed\n")
-            return 0, error_string
+            return 0, "Compilation failed"
     except subprocess.TimeoutExpired:
         logging.warning("\nCompilation timed out\n")
         p_compile.kill()
@@ -249,11 +249,12 @@ def compile_benchmark_pbbs(lazy_benchmark_options, use_dac, benchmark_obj, outpu
     p_compile = subprocess.Popen(compile_cmd, shell=True, stdout=subprocess.PIPE)
     try:
         out, err = p_compile.communicate(compilation_timeout)
-        if (err != None):
-            error_string = get_error_string(err)
-            logging.warning("\n" + error_string + "\n")
+        logging.debug(str(out))
+        logging.warning(str(err))
+        if ("Error" in str(out)):
             logging.warning("\nCompilation failed\n")
-            return 0, error_string
+            return 0, "Compilation failed"
+
     except subprocess.TimeoutExpired:
         logging.warning("\nCompilation timed out\n")
         p_compile.kill()
@@ -318,11 +319,12 @@ def compile_benchmark_pbbs_v2(lazy_benchmark_options, use_dac, benchmark_obj, ou
     p_compile = subprocess.Popen(compile_cmd, shell=True, stdout=subprocess.PIPE)
     try:
         out, err = p_compile.communicate(compilation_timeout)
-        if (err != None):
-            error_string = get_error_string(err)
-            logging.warning("\n" + error_string + "\n")
+        logging.debug(str(out))
+        logging.warning(str(err))
+        if ("Error" in str(out)):
             logging.warning("\nCompilation failed\n")
-            return 0, error_string
+            return 0, "Compilation failed"
+
     except subprocess.TimeoutExpired:
         logging.warning("\nCompilation timed out\n")
         p_compile.kill()
@@ -344,14 +346,15 @@ def create_testfile(benchmark_obj, input_file):
     p_check = subprocess.Popen(test_cmd,  shell=True ,stdout=subprocess.PIPE)
     try:
         out, err = p_check.communicate(check_benchmark_timout)
+        logging.debug(str(out))
+        logging.warning(str(err))
+
     except subprocess.TimeoutExpired:
         p_check.kill()
         logging.warning("Create benchmark timeout out")
         assert(0)
         return RunStatus.TIMEOUT
 
-    logging.debug(out)
-    logging.debug(err)
     return RunStatus.CORRECT
 
 
@@ -417,6 +420,9 @@ def run_benchmark_cilk5(lazy_benchmark_options, benchmark_obj, num_cores, output
     p_run = subprocess.Popen(run_cmd, shell=True, stdout=subprocess.PIPE)
     try:
         out, err = p_run.communicate(check_benchmark_timout)
+        logging.debug(str(out))
+        logging.warning(str(err))
+
         #p_run.wait(check_benchmark_timout) # TODO: make timeout time specific to each benchmark
         if p_run.returncode:
             logging.warning("Benchmark failed to run correctly")
@@ -451,7 +457,7 @@ def run_benchmark_cilk5(lazy_benchmark_options, benchmark_obj, num_cores, output
 def run_benchmark_pbbs(lazy_benchmark_options, benchmark_obj, num_cores, output_file, input_file):
     # run_cmd is the commmand to run the benchmark.
     goto_dir =  "cd " + benchmark_obj.benchmark_name + "/" + benchmark_obj.name
-    
+
     numa_cmd = "numactl --interleave=all"
     if(lazy_benchmark_options.disable_numa):
         numa_cmd = ""
@@ -478,6 +484,9 @@ def run_benchmark_pbbs(lazy_benchmark_options, benchmark_obj, num_cores, output_
     p_run = subprocess.Popen(run_cmd, shell=True, stdout=subprocess.PIPE)
     try:
         out, err = p_run.communicate(check_benchmark_timout)
+        logging.debug(str(out))
+        logging.warning(str(err))
+
         if p_run.returncode:
             logging.warning("Benchmark failed to run correctly")
             return RunStatus.INCORRECT, None
@@ -516,7 +525,7 @@ def run_benchmark_pbbs_v2(lazy_benchmark_options, benchmark_obj, num_cores, outp
     if(lazy_benchmark_options.disable_numa):
         numa_cmd = ""
 
-    
+
     binary = "NAIVE_MAPPING=1 " + " CILK_NWORKERS=" + str(num_cores) + " LD_LIBRARY_PATH=../../../opencilk/cheetah/build/lib/x86_64-unknown-linux-gnu/ "+ numa_cmd + "  ./" + benchmark_obj.binary
 
 
@@ -545,8 +554,8 @@ def run_benchmark_pbbs_v2(lazy_benchmark_options, benchmark_obj, num_cores, outp
         p_run = subprocess.Popen(run_cmd, shell=True, stdout=subprocess.PIPE)
         try:
             out, err = p_run.communicate(check_benchmark_timout)
-            logging.debug(out)
-            logging.debug(err)
+            logging.debug(str(out))
+            logging.warning(str(err))
             logging.debug(p_run.returncode)
             #if err:
             if p_run.returncode == 139:
@@ -633,6 +642,9 @@ def run_check_benchmark_pbbs(benchmark_obj, output_file, input_file):
     try:
         #p_check.wait(check_benchmark_timout)
         out, err = p_check.communicate(check_benchmark_timout)
+        logging.debug(str(out))
+        logging.warning(str(err))
+
         if p_check.returncode:
             logging.warning("Benchmark check failed to run correctly")
             logging.warning (out)
@@ -644,8 +656,6 @@ def run_check_benchmark_pbbs(benchmark_obj, output_file, input_file):
         assert(0)
         return RunStatus.TIMEOUT
 
-    logging.debug (out)
-    logging.debug (err)
     return RunStatus.CORRECT
 
 def run_check_benchmark_pbbs_v2(benchmark_obj, output_file, input_file):
@@ -666,10 +676,11 @@ def run_check_benchmark_pbbs_v2(benchmark_obj, output_file, input_file):
     try:
         #p_check.wait(check_benchmark_timout)
         out, err = p_check.communicate(check_benchmark_timout)
+        logging.debug(str(out))
+        logging.warning(str(err))
+
         if p_check.returncode:
             logging.warning("Benchmark check failed to run correctly")
-            logging.warning (out)
-            logging.warning (err)
             return RunStatus.INCORRECT
     except subprocess.TimeoutExpired:
         p_check.kill()
@@ -677,8 +688,6 @@ def run_check_benchmark_pbbs_v2(benchmark_obj, output_file, input_file):
         assert(0)
         return RunStatus.TIMEOUT
 
-    logging.debug (out)
-    logging.debug (err)
     return RunStatus.CORRECT
 
 
@@ -693,7 +702,6 @@ def execute_benchmark(benchmark_obj, lazy_benchmark_options, csv_writer, csv_fil
         if(lazy_benchmark_options.measure_promotedtask):
             row = [""] * (num_cols + (lazy_benchmark_options.num_tests+3)*n_iteration - 1)
 
-
         if write_test_name:
             row[int(ColName.BENCHMARK)] = benchmark_obj.name + "/" + benchmark_obj.binary
             row[int(ColName.COMPILES)] = "Yes"
@@ -704,8 +712,7 @@ def execute_benchmark(benchmark_obj, lazy_benchmark_options, csv_writer, csv_fil
             write_dataset_name = False
 
         row[int(ColName.NUM_CORES)] = num_cores
-        
-        
+
         row[int(ColName.DISABLE_NUMA)] = "No"
         if(lazy_benchmark_options.disable_numa):
             row[int(ColName.DISABLE_NUMA)] = "Yes"
@@ -733,7 +740,7 @@ def execute_benchmark(benchmark_obj, lazy_benchmark_options, csv_writer, csv_fil
         row[int(ColName.IGNORE_USER_PFORGAINSIZE)] = "No"
         if(lazy_benchmark_options.noopt == 1):
             row[int(ColName.IGNORE_USER_PFORGAINSIZE)] = "Yes"
-        
+
 
         logging.debug("\nRunning Test: dataset: %s, num_cores: %s\n" % (data_set, num_cores))
 
@@ -752,10 +759,21 @@ def execute_benchmark(benchmark_obj, lazy_benchmark_options, csv_writer, csv_fil
                     row[start_row] = res;
                     start_row = start_row + 1
             else:
-                row[start_row] = "N/A"
-
+                for res in run_time:
+                    row[start_row] = 'N/A'
+                    start_row = start_row + 1
+                row[int(ColName.STATUS)] = get_run_status_str(RunStatus.INCORRECT)
+                row[int(ColName.ERROR_MSG)] = "Verification failed"
+                run_status = RunStatus.INCORRECT
         else:
-            row[start_row] = "N/A"
+            for res in range(0, lazy_benchmark_options.num_tests):
+                row[start_row] = 'N/A'
+                start_row = start_row + 1
+
+            #row[start_row] = "N/A"
+            row[int(ColName.STATUS)] = get_run_status_str(RunStatus.INCORRECT)
+            row[int(ColName.ERROR_MSG)] = "Benchmark failed to run"
+            run_status = RunStatus.INCORRECT
             break
 
         csv_writer.writerow(row)
@@ -766,7 +784,7 @@ def execute_benchmark(benchmark_obj, lazy_benchmark_options, csv_writer, csv_fil
     return written_row
 
 def execute_benchmark_top(benchmark_obj, lazy_benchmark_options, csv_writer, csv_file, test_cores, write_test_name, compile_status, compiler_error):
-    written_row = 5
+    written_row = ColName.TIME
     if (lazy_benchmark_options.execute_small_tests):
         inputs = benchmark_obj.small_inputs
     else:
@@ -875,7 +893,7 @@ def main():
 
     # Setup logger
     logging.basicConfig(filename=output_dir+ "/" + 'log.txt', level=logging.DEBUG, format='')
-    
+
     # Write category names on first row.
     csv_writer.writerow(results_file_categories)
     csv_writer.writerow([""] * num_cols)
@@ -924,6 +942,31 @@ def main():
             else:
                 row[int(ColName.COMPILES)] = "No"
             row[int(ColName.ERROR_MSG)] = compiler_error
+
+            if(lazy_benchmark_options.cilk_lowering == CilkLowering.Serial):
+                row[int(ColName.PARALLEL_FRAMEWORK)] = "Serial"
+            elif (lazy_benchmark_options.cilk_lowering == CilkLowering.LazyD2):
+                row[int(ColName.PARALLEL_FRAMEWORK)] = "LazyD with Frequent Polling"
+            elif (lazy_benchmark_options.cilk_lowering == CilkLowering.Nopoll):
+                row[int(ColName.PARALLEL_FRAMEWORK)] = "LazyD with No Polling"
+            elif (lazy_benchmark_options.cilk_lowering == CilkLowering.LazyD0):
+                row[int(ColName.PARALLEL_FRAMEWORK)] = "LazyD with InFrequent Polling"
+            elif (lazy_benchmark_options.cilk_lowering == CilkLowering.CilkPlus):
+                row[int(ColName.PARALLEL_FRAMEWORK)] = "OpenCilk"
+            else:
+                assert(0);
+
+            row[int(ColName.TASK_SCHEDULER)] = lazy_benchmark_options.task_scheduler
+
+            row[int(ColName.PFORMAXGRAINSIZE)] = 2048
+            if(lazy_benchmark_options.finergrainsize == 1):
+                row[int(ColName.PFORMAXGRAINSIZE)] = 8
+
+
+            row[int(ColName.IGNORE_USER_PFORGAINSIZE)] = "No"
+            if(lazy_benchmark_options.noopt == 1):
+                row[int(ColName.IGNORE_USER_PFORGAINSIZE)] = "Yes"
+
             csv_writer.writerow(row)
             continue
 
