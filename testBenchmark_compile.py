@@ -18,9 +18,8 @@ from enum import IntEnum
 from parse_lazybenchmark_csv import parse_csv
 
 
-
 results_file_categories = ["BENCHMARK", "COMPILES", "DATASET", "NUM CORES",
-                           "STATUS", "USE_NUMA", "PARALLEL_FRAMEWORK", "TASK_SCHEDULER", "PFOR_MAXGRAINSIZE", "IGNORE_USERS_PFORGRAINSIZE", "TIME(sec)", "ERROR MSG"]
+                           "STATUS", "DISABLE_NUMA", "PARALLEL_FRAMEWORK", "TASK_SCHEDULER", "PFOR_MAXGRAINSIZE", "IGNORE_USERS_PFORGRAINSIZE", "TIME(sec)", "ERROR MSG"]
 
 class ColName(IntEnum):
     BENCHMARK = 0;
@@ -28,7 +27,7 @@ class ColName(IntEnum):
     DATASET = 2
     NUM_CORES = 3
     STATUS = 4
-    USE_NUMA=5
+    DISABLE_NUMA=5
     PARALLEL_FRAMEWORK = 6
     TASK_SCHEDULER = 7
     PFORMAXGRAINSIZE = 8
@@ -61,7 +60,7 @@ class CilkLowering(Enum):
     CilkPlus = 6
 
 class LazyBenchmarkOptions(object):
-    def __init__(self, execute_small_tests, compile_only, execute_only, use_cilk, use_dac, num_cores, backoff, num_tests, benchmarks_to_run, cilk_lowering, task_scheduler, noopt, finergrainsize, measure_icache, measure_promotedtask, use_numa):
+    def __init__(self, execute_small_tests, compile_only, execute_only, use_cilk, use_dac, num_cores, backoff, num_tests, benchmarks_to_run, cilk_lowering, task_scheduler, noopt, finergrainsize, measure_icache, measure_promotedtask, disable_numa):
         self.execute_small_tests = execute_small_tests
         self.compile_only = compile_only
         self.execute_only = execute_only
@@ -77,7 +76,7 @@ class LazyBenchmarkOptions(object):
         self.finergrainsize = finergrainsize
         self.measure_icache = measure_icache
         self.measure_promotedtask = measure_promotedtask
-        self.use_numa = use_numa
+        self.disable_numa = disable_numa
         
 # Gets string representation of run status.
 def get_run_status_str(run_status):
@@ -394,9 +393,10 @@ def run_benchmark(lazy_benchmark_options, benchmark_obj, num_cores, output_file,
 def run_benchmark_cilk5(lazy_benchmark_options, benchmark_obj, num_cores, output_file, input_file):
     # run_cmd is the commmand to run the benchmark.
     goto_dir =  "cd " + benchmark_obj.benchmark_name
-    numa_cmd = ""
-    if(lazy_benchmark_options.use_numa):
-        numa_cmd = "numactl --interleave=all"
+
+    numa_cmd = "numactl --interleave=all"
+    if(lazy_benchmark_options.disable_numa):
+        numa_cmd = ""
 
     #binary = "NAIVE_MAPPING=1 CILK_NWORKERS=" + str(num_cores) + " numactl --interleave=all ./" + benchmark_obj.binary
     binary = "NAIVE_MAPPING=1 CILK_NWORKERS=" + str(num_cores) + " " + numa_cmd + "  ./" + benchmark_obj.binary
@@ -452,9 +452,10 @@ def run_benchmark_pbbs(lazy_benchmark_options, benchmark_obj, num_cores, output_
     # run_cmd is the commmand to run the benchmark.
     goto_dir =  "cd " + benchmark_obj.benchmark_name + "/" + benchmark_obj.name
     
-    numa_cmd = ""
-    if(lazy_benchmark_options.use_numa):
-        numa_cmd = "numactl --interleave=all"
+    numa_cmd = "numactl --interleave=all"
+    if(lazy_benchmark_options.disable_numa):
+        numa_cmd = ""
+
 
     binary = "NAIVE_MAPPING=1 CILK_NWORKERS=" + str(num_cores) + " " + numa_cmd + "  ./" + benchmark_obj.binary
     arguments = "-o " + output_file + " -r " + str(lazy_benchmark_options.num_tests) + " " + "../" + benchmark_obj.data_dir + "/data/" + input_file
@@ -511,9 +512,10 @@ def run_benchmark_pbbs_v2(lazy_benchmark_options, benchmark_obj, num_cores, outp
     # run_cmd is the commmand to run the benchmark.
     goto_dir =  "cd " + benchmark_obj.benchmark_name + "/" + benchmark_obj.name
 
-    numa_cmd = ""
-    if(lazy_benchmark_options.use_numa):
-        numa_cmd = "numactl --interleave=all"
+    numa_cmd = "numactl --interleave=all"
+    if(lazy_benchmark_options.disable_numa):
+        numa_cmd = ""
+
     
     binary = "NAIVE_MAPPING=1 " + " CILK_NWORKERS=" + str(num_cores) + " LD_LIBRARY_PATH=../../../opencilk/cheetah/build/lib/x86_64-unknown-linux-gnu/ "+ numa_cmd + "  ./" + benchmark_obj.binary
 
@@ -704,9 +706,9 @@ def execute_benchmark(benchmark_obj, lazy_benchmark_options, csv_writer, csv_fil
         row[int(ColName.NUM_CORES)] = num_cores
         
         
-        row[int(ColName.USE_NUMA)] = "No"
-        if(lazy_benchmark_options.use_numa):
-            row[int(ColName.USE_NUMA)] = "Yes"
+        row[int(ColName.DISABLE_NUMA)] = "No"
+        if(lazy_benchmark_options.disable_numa):
+            row[int(ColName.DISABLE_NUMA)] = "Yes"
 
         if(lazy_benchmark_options.cilk_lowering == CilkLowering.Serial):
             row[int(ColName.PARALLEL_FRAMEWORK)] = "Serial"
@@ -818,7 +820,7 @@ def main():
     parser.add_argument("--num_cores", nargs='+', default=['1'], help="Number of cores used. Can be a list of number of cores")
     parser.add_argument("--num_tests", default=1, type=int, help="Number of runs")
     parser.add_argument("--execute", action='store_true', help="Only execute benchmark")
-    parser.add_argument("--use_numa", action='store_true', help="Run the benchmark using numa")
+    parser.add_argument("--disable_numa", action='store_true', help="Disable numa when running the benchmark")
     parser.add_argument("--icache", action='store_true', help="Run the icache experiment")
     parser.add_argument("--parallel_framework", default='tapir', choices=['lazyd0', 'lazyd2', 'nopoll', 'serial', 'tapir'], help="What parallel framework to use (options: lazyd0, lazyd2, nopoll, serial, tapir). Default tapir")
     parser.add_argument("--fg", action='store_true', help="Use finer grainsize. Only for LazyD and OpenCilk-fg")
@@ -832,7 +834,7 @@ def main():
     execute_only = flags.execute
     num_cores = flags.num_cores
     num_tests = flags.num_tests
-    use_numa = flags.use_numa
+    disable_numa = flags.disable_numa
 
     finergrainsize = flags.fg
     measure_icache = flags.icache
@@ -860,7 +862,7 @@ def main():
     output_dir = "oDir/lazybenchmark_output_files_" + time.strftime("%Y%m%d-%H%M%S")
     results_file = "lazybenchmark_results.csv"
 
-    lazy_benchmark_options = LazyBenchmarkOptions (False, compile_only, execute_only, False, False, num_cores, 0, num_tests, benchmarks_to_run, cilk_lowering, task_scheduler, noopt, finergrainsize, measure_icache, False, use_numa);
+    lazy_benchmark_options = LazyBenchmarkOptions (False, compile_only, execute_only, False, False, num_cores, 0, num_tests, benchmarks_to_run, cilk_lowering, task_scheduler, noopt, finergrainsize, measure_icache, False, disable_numa);
 
 
     # Number of cores for which benchmarks should be tested.
@@ -888,7 +890,7 @@ def main():
 
     for i in range(len(lazy_benchmark_options.benchmarks_to_run)):
         if (i != (len(lazy_benchmark_options.benchmarks_to_run) - 1)):
-            logging.debug("%s, " % lazy_benchmark_options.benchmarks_to_run[i].name, end="")
+            logging.debug("%s, " % lazy_benchmark_options.benchmarks_to_run[i].name)
         else:
             logging.debug("%s\n\n" % lazy_benchmark_options.benchmarks_to_run[i].name)
 
