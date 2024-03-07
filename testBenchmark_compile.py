@@ -59,7 +59,7 @@ class CilkLowering(Enum):
     CilkPlus = 6
 
 class LazyBenchmarkOptions(object):
-    def __init__(self, compile_only, execute_only, num_cores, num_tests, benchmarks_to_run, cilk_lowering, task_scheduler, noopt, finergrainsize, measure_icache, measure_promotedtask, disable_numa, verbose, dry_run):
+    def __init__(self, compile_only, execute_only, num_cores, num_tests, benchmarks_to_run, cilk_lowering, task_scheduler, noopt, finergrainsize, measure_icache, measure_promotedtask, disable_numa, verbose, dry_run, wait_load):
         self.compile_only = compile_only
         self.execute_only = execute_only
         self.num_cores = num_cores
@@ -74,6 +74,7 @@ class LazyBenchmarkOptions(object):
         self.disable_numa = disable_numa
         self.verbose = verbose
         self.dry_run = dry_run
+        self.wait_load = wait_load
 
 # Gets string representation of run status.
 def get_run_status_str(run_status):
@@ -109,9 +110,11 @@ def dump_string(str, w, v):
 # Run a command
 # Return status and message
 def runcmd(cmd, timeout, error_handler, lazy_benchmark_options):
-    dump_string("Command: " + cmd, 0, lazy_benchmark_options.verbose)
     if lazy_benchmark_options.dry_run:
+        dump_string("Command: " + cmd, 0, 1)
         return CmdStatus.CORRECT, "", "", ""
+    else:
+        dump_string("Command: " + cmd, 0, lazy_benchmark_options.verbose)
 
     p_process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     try:
@@ -120,11 +123,29 @@ def runcmd(cmd, timeout, error_handler, lazy_benchmark_options):
         err = str(err)
         dump_string(out, 0, lazy_benchmark_options.verbose)
         dump_string(err, 1, lazy_benchmark_options.verbose)
-        return error_handler(p_process, str(out), str(err)),
+        status, error_string = error_handler(p_process, out, err)
+        return status, error_string, out, err
     except subprocess.TimeoutExpired:
         logging.warning("\nCompilation timed out\n")
         p_process.kill()
         return CmdStatus.TIMEOUT, "Timeout", "", ""
+
+
+
+def compile_error_handler(p_process, out, err):
+    if("Error" in out):
+        logging.warning("Compilation failed")
+        return CmdStatus.INCORRECT, "Compilation failed"
+    else:
+        return CmdStatus.CORRECT, ""
+
+def run_error_handler(p_process, out, err):
+    if p_process.returncode:
+        logging.warning("Benchmark failed to run correctly")
+        return CmdStatus.INCORRECT, "Benchmark failed to run correctly"
+    else:
+        return CmdStatus.CORRECT, ""
+
 
 # Returns list [1, 8, 16, ..., max_cores]
 # Returns [] if specified number of cores is invalid.
@@ -154,15 +175,15 @@ def get_test_num_cores(specified_cores):
 
 # Helper to compile benchmark. Returns 1 on success and 0 on error. Also returns
 # simplified error string, which is "" if timeout or no error.
-def compile_benchmark(lazy_benchmark_options, use_dac, benchmark_obj, output_dir):
+def compile_benchmark(lazy_benchmark_options, benchmark_obj, output_dir):
     if benchmark_obj.benchmark_name == "pbbs_v2":
-        return compile_benchmark_pbbs_v2(lazy_benchmark_options, use_dac, benchmark_obj, output_dir)
+        return compile_benchmark_pbbs_v2(lazy_benchmark_options, benchmark_obj, output_dir)
     elif benchmark_obj.benchmark_name == "cilk5":
-        return compile_benchmark_cilk5(lazy_benchmark_options, use_dac, benchmark_obj, output_dir)
+        return compile_benchmark_cilk5(lazy_benchmark_options, benchmark_obj, output_dir)
     else:
         assert(0)
 
-def compile_benchmark_cilk5(lazy_benchmark_options, use_dac, benchmark_obj, output_dir):
+def compile_benchmark_cilk5(lazy_benchmark_options, benchmark_obj, output_dir):
     name = benchmark_obj.benchmark_name+'_'+benchmark_obj.name
     dump_string("Compiling " + name, 0, lazy_benchmark_options.verbose)
 
@@ -189,14 +210,7 @@ def compile_benchmark_cilk5(lazy_benchmark_options, use_dac, benchmark_obj, outp
     # Create a function wrapper for this
     #dump_string("Compile command" + compile_cmd, lazy_benchmark_options.verbose)
 
-    error_handler = lambda p_process, out, err:
-    if("Error" in out):
-        dump_string("\nCompilation failed\n", 1, lazy_benchmark_options.verbose)
-        return CmdStatus.INCORRECT, "Compilation failed"
-    else:
-        return CmdStatus.CORRECT, ","
-
-    return runcmd(compile_cmd, compilation_timeout, error_handler, lazy_benchmark_options);
+    return runcmd(compile_cmd, compilation_timeout, compile_error_handler, lazy_benchmark_options);
 """
     p_compile = subprocess.Popen(compile_cmd, shell=True, stdout=subprocess.PIPE)
     try:
@@ -214,7 +228,7 @@ def compile_benchmark_cilk5(lazy_benchmark_options, use_dac, benchmark_obj, outp
     return 1, ""
 """
 
-def compile_benchmark_pbbs_v2(lazy_benchmark_options, use_dac, benchmark_obj, output_dir):
+def compile_benchmark_pbbs_v2(lazy_benchmark_options, benchmark_obj, output_dir):
     # Remove old files and compile the benchmark.
     goto_dir = "cd " + benchmark_obj.benchmark_name + "/" + benchmark_obj.name
 
@@ -263,14 +277,7 @@ def compile_benchmark_pbbs_v2(lazy_benchmark_options, use_dac, benchmark_obj, ou
     else:
         assert(0);
 
-    error_handler = lambda p_process, out, err:
-    if("Error" in out):
-        dump_string("\nCompilation failed\n", 1, lazy_benchmark_options.verbose)
-        return CmdStatus.INCORRECT, "Compilation failed"
-    else:
-        return CmdStatus.CORRECT, ","
-
-    return runcmd(compile_cmd, compilation_timeout, error_handler, lazy_benchmark_options);
+    return runcmd(compile_cmd, compilation_timeout, compile_error_handler, lazy_benchmark_options);
 
 """
     p_compile = subprocess.Popen(compile_cmd, shell=True, stdout=subprocess.PIPE)
@@ -297,14 +304,7 @@ def create_testfile(benchmark_obj, input_file, lazy_benchmark_options):
     goto_dir_test = goto_dir + "/../" + benchmark_obj.data_dir + "/data/"
     test_cmd = goto_dir_test + " && pwd && make " + input_file
 
-    error_handler = lambda p_process, out, err:
-    if("Error" in out):
-        logging.warning("\nCompilation failed\n")
-        return CmdStatus.INCORRECT, "Compilation failed"
-    else:
-        return CmdStatus.CORRECT, ","
-
-    return runcmd(test_cmd, check_benchmark_timout, error_handler, lazy_benchmark_options);
+    return runcmd(test_cmd, check_benchmark_timout, run_error_handler, lazy_benchmark_options);
 """
     p_check = subprocess.Popen(test_cmd,  shell=True ,stdout=subprocess.PIPE)
     try:
@@ -331,11 +331,11 @@ def load_avg():
 def run_benchmark(lazy_benchmark_options, benchmark_obj, num_cores, output_file, input_file):
     # Before executing the code, busy wait until /proc/loadavg is below than 1
     loadctr = 0;
-    loadwait = 2
-    while load_avg() > loadwait:
+    waitload = lazy_benchmark_options.wait_load
+    while load_avg() > waitload:
         loadctr = loadctr+1;
-        if(loadctr == 100000000):
-            dump_string("Waiting for laod_avg to go below %d\n" % (loadwait), 0, lazy_benchmark_options.verbose)
+        if(loadctr == 1000000):
+            dump_string("Waiting for laod_avg to go below %d\n" % (waitload), 0, lazy_benchmark_options.verbose)
             loadctr=0;
         continue
 
@@ -370,17 +370,10 @@ def run_benchmark_cilk5(lazy_benchmark_options, benchmark_obj, num_cores, output
 
     # The benchmark may have a bug causing an infinite loop. The process
     # is killed after a timeout time to move on to other tests.
-    error_handler = lambda p_process, out, err:
-    if p_process.returncode:
-        logging.warning("Benchmark failed to run correctly")
-        return CmdStatus.INCORRECT, "Benchmark failed to run correctly"
-    else:
-        return CmdStatus.CORRECT, ""
-
-    status, status_str, out, err = runcmd(run_cmd, check_benchmark_timout, error_handler, lazy_benchmark_options);
+    status, status_str, out, err = runcmd(run_cmd, check_benchmark_timout, run_error_handler, lazy_benchmark_options);
     if(status == CmdStatus.INCORRECT):
         return CmdStatus.INCORRECT, None
-    else if (status == CmdStatus.TIMEOUT):
+    elif (status == CmdStatus.TIMEOUT):
         return CmdStatus.TIMEOUT, None
 
     """
@@ -439,17 +432,11 @@ def run_benchmark_pbbs_v2(lazy_benchmark_options, benchmark_obj, num_cores, outp
         # The benchmark may have a bug causing an infinite loop. The process
         # is killed after a timeout time to move on to other tests.
 
-        error_handler = lambda p_process, out, err:
-        if p_process.returncode:
-            logging.warning("Benchmark failed to run correctly")
-            return CmdStatus.INCORRECT, "Benchmark failed to run correctly"
-        else:
-            return CmdStatus.CORRECT, ""
 
-        status, status_str, out, err = runcmd(run_cmd, check_benchmark_timout, error_handler, lazy_benchmark_options);
+        status, status_str, out, err = runcmd(run_cmd, check_benchmark_timout, run_error_handler, lazy_benchmark_options);
         if(status == CmdStatus.INCORRECT):
             return CmdStatus.INCORRECT, None
-        else if (status == CmdStatus.TIMEOUT):
+        elif (status == CmdStatus.TIMEOUT):
             return CmdStatus.TIMEOUT, None
 
 
@@ -512,19 +499,19 @@ def run_benchmark_pbbs_v2(lazy_benchmark_options, benchmark_obj, num_cores, outp
 
 
 # Helper to run the benchmark. Run status is returned.
-def run_check_benchmark(benchmark_obj, output_file, input_file):
+def run_check_benchmark(lazy_benchmark_options, benchmark_obj, output_file, input_file):
     if benchmark_obj.benchmark_name == "pbbs_v2":
-        return run_check_benchmark_pbbs_v2(benchmark_obj, output_file, input_file);
+        return run_check_benchmark_pbbs_v2(lazy_benchmark_options, benchmark_obj, output_file, input_file);
     elif benchmark_obj.benchmark_name == "cilk5":
-        return run_check_benchmark_cilk5(benchmark_obj, output_file, input_file);
+        return run_check_benchmark_cilk5(lazy_benchmark_options, benchmark_obj, output_file, input_file);
     else:
         assert(0);
 
-def run_check_benchmark_cilk5(benchmark_obj, output_file, input_file):
+def run_check_benchmark_cilk5(lazy_benchmark_options, benchmark_obj, output_file, input_file):
     # TODO: Do something with this
     return CmdStatus.CORRECT,  "", "", ""
 
-def run_check_benchmark_pbbs_v2(benchmark_obj, output_file, input_file):
+def run_check_benchmark_pbbs_v2(lazy_benchmark_options, benchmark_obj, output_file, input_file):
     # test_cmd is the command to test the correctness of the benchmark.
     goto_dir =  "cd " + benchmark_obj.benchmark_name + "/" +  benchmark_obj.name
     goto_dir_test = goto_dir + "/../bench/"
@@ -533,14 +520,7 @@ def run_check_benchmark_pbbs_v2(benchmark_obj, output_file, input_file):
     arguments_test = "../" + benchmark_obj.data_dir + "/data/" + input_file + " " + "../../" + benchmark_obj.name + "/" + output_file
     test_cmd = goto_dir_test + " && pwd && " + binary_test + " " + arguments_test
 
-    error_handler = lambda p_process, out, err:
-    if p_process.returncode:
-        logging.warning("Benchmark failed to run correctly")
-        return CmdStatus.INCORRECT, "Benchmark failed to run correctly"
-    else:
-        return CmdStatus.CORRECT, ""
-
-    return runcmd(run_cmd, check_benchmark_timout, error_handler, lazy_benchmark_options);
+    return runcmd(test_cmd, check_benchmark_timout, run_error_handler, lazy_benchmark_options);
 
     """
     p_check = subprocess.Popen(test_cmd,  shell=True ,stdout=subprocess.PIPE)
@@ -598,7 +578,7 @@ def execute_benchmark(benchmark_obj, lazy_benchmark_options, csv_writer, csv_fil
         run_status, run_time = run_benchmark(lazy_benchmark_options, benchmark_obj, num_cores, output_file, data_set)
         row[int(ColName.STATUS)] = get_run_status_str(run_status)
         if run_status == CmdStatus.CORRECT:
-            check_status, _, _, _ = run_check_benchmark(benchmark_obj, output_file, data_set)
+            check_status, message, out, err = run_check_benchmark(lazy_benchmark_options, benchmark_obj, output_file, data_set)
             if check_status == CmdStatus.CORRECT:
                 for res in run_time:
                     row[start_row] = res;
@@ -629,6 +609,7 @@ def execute_benchmark(benchmark_obj, lazy_benchmark_options, csv_writer, csv_fil
 def execute_benchmark_top(benchmark_obj, lazy_benchmark_options, csv_writer, csv_file, test_cores, compile_status, compiler_error):
     written_row = ColName.TIME
     # Go through the benchmark's data sets.
+    inputs = benchmark_obj.standard_inputs
     for data_set in inputs:
         # Used to determine when data set name should be written to csv file.
         # Path from benchmark directory.
@@ -636,7 +617,7 @@ def execute_benchmark_top(benchmark_obj, lazy_benchmark_options, csv_writer, csv
         if not os.path.isfile(data_path) and (benchmark_obj.benchmark_name == "pbbs_v2") :
             dump_string("No data set: " + data_set + " Creating test file", 0, lazy_benchmark_options.verbose)
 
-            create_status, _, _, _ =  create_testfile(benchmark_obj, data_set, lazy_benchmark_options)
+            create_status, message, out, err =  create_testfile(benchmark_obj, data_set, lazy_benchmark_options)
             if create_status != CmdStatus.CORRECT:
                 logging.warning("Failed to create test")
                 continue
@@ -683,6 +664,7 @@ def main():
     parser.add_argument("--ifile", default="lazybenchmark.csv", help="Input file")
     parser.add_argument("-v", "--verbose", action='store_true', help="Verbose")
     parser.add_argument("--dry_run", action='store_true', help="Dry run")
+    parser.add_argument("--wait_load", default=10, type=int, help="The minimum load to execute the benchmark (Default=10)")
 
     # parse arguments
     flags = parser.parse_args()
@@ -691,7 +673,7 @@ def main():
     num_cores = flags.num_cores
     num_tests = flags.num_tests
     disable_numa = flags.disable_numa
-
+    wait_load = flags.wait_load
     finergrainsize = flags.fg
     measure_icache = flags.icache
     noopt = flags.noopt
@@ -718,7 +700,7 @@ def main():
     output_dir = "oDir/lazybenchmark_output_files_" + time.strftime("%Y%m%d-%H%M%S")
     results_file = "lazybenchmark_results.csv"
 
-    lazy_benchmark_options = LazyBenchmarkOptions(compile_only, execute_only, num_cores, num_tests, benchmarks_to_run, cilk_lowering, task_scheduler, noopt, finergrainsize, measure_icache, False, disable_numa, verbose, dry_run);
+    lazy_benchmark_options = LazyBenchmarkOptions(compile_only, execute_only, num_cores, num_tests, benchmarks_to_run, cilk_lowering, task_scheduler, noopt, finergrainsize, measure_icache, False, disable_numa, verbose, dry_run, wait_load);
 
 
     # Number of cores for which benchmarks should be tested.
@@ -755,7 +737,7 @@ def main():
 
         # compile benchmark
         if(not lazy_benchmark_options.execute_only):
-            compile_status, compiler_error, _, _ = compile_benchmark(lazy_benchmark_options, lazy_benchmark_options.use_dac, benchmark_obj, output_dir)
+            compile_status, compiler_error, out, err = compile_benchmark(lazy_benchmark_options, benchmark_obj, output_dir)
         else:
             compile_status = CmdStatus.CORRECT;
             compiler_error = "testPBBS run without compiling benchmark"
