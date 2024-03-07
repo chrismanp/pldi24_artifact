@@ -211,22 +211,6 @@ def compile_benchmark_cilk5(lazy_benchmark_options, benchmark_obj, output_dir):
     #dump_string("Compile command" + compile_cmd, lazy_benchmark_options.verbose)
 
     return runcmd(compile_cmd, compilation_timeout, compile_error_handler, lazy_benchmark_options);
-"""
-    p_compile = subprocess.Popen(compile_cmd, shell=True, stdout=subprocess.PIPE)
-    try:
-        out, err = p_compile.communicate(compilation_timeout)
-        logging.debug(str(out))
-        logging.warning(str(err))
-        if ("Error" in str(out)):
-            logging.warning("\nCompilation failed\n")
-            return 0, "Compilation failed"
-    except subprocess.TimeoutExpired:
-        logging.warning("\nCompilation timed out\n")
-        p_compile.kill()
-        return 0, ""
-
-    return 1, ""
-"""
 
 def compile_benchmark_pbbs_v2(lazy_benchmark_options, benchmark_obj, output_dir):
     # Remove old files and compile the benchmark.
@@ -279,24 +263,6 @@ def compile_benchmark_pbbs_v2(lazy_benchmark_options, benchmark_obj, output_dir)
 
     return runcmd(compile_cmd, compilation_timeout, compile_error_handler, lazy_benchmark_options);
 
-"""
-    p_compile = subprocess.Popen(compile_cmd, shell=True, stdout=subprocess.PIPE)
-    try:
-        out, err = p_compile.communicate(compilation_timeout)
-        logging.debug(str(out))
-        logging.warning(str(err))
-        if ("Error" in str(out)):
-            logging.warning("\nCompilation failed\n")
-            return 0, "Compilation failed"
-
-    except subprocess.TimeoutExpired:
-        logging.warning("\nCompilation timed out\n")
-        p_compile.kill()
-        return 0, ""
-
-    return 1, ""
-"""
-
 # Helper to create test file
 def create_testfile(benchmark_obj, input_file, lazy_benchmark_options):
     # test_cmd is the command to test the correctness of the benchmark.
@@ -305,20 +271,6 @@ def create_testfile(benchmark_obj, input_file, lazy_benchmark_options):
     test_cmd = goto_dir_test + " && pwd && make " + input_file
 
     return runcmd(test_cmd, check_benchmark_timout, run_error_handler, lazy_benchmark_options);
-"""
-    p_check = subprocess.Popen(test_cmd,  shell=True ,stdout=subprocess.PIPE)
-    try:
-        out, err = p_check.communicate(check_benchmark_timout)
-        logging.debug(str(out))
-        logging.warning(str(err))
-
-    except subprocess.TimeoutExpired:
-        p_check.kill()
-        logging.warning("Create benchmark timeout out")
-        assert(0)
-        return CmdStatus.TIMEOUT
-    return CmdStatus.CORRECT
-"""
 
 
 # Get the load average over the last 1 minutes
@@ -376,20 +328,6 @@ def run_benchmark_cilk5(lazy_benchmark_options, benchmark_obj, num_cores, output
     elif (status == CmdStatus.TIMEOUT):
         return CmdStatus.TIMEOUT, None
 
-    """
-    p_run = subprocess.Popen(run_cmd, shell=True, stdout=subprocess.PIPE)
-    try:
-        out, err = p_run.communicate(check_benchmark_timout)
-        logging.debug(str(out))
-        logging.warning(str(err))
-        if p_run.returncode:
-            logging.warning("Benchmark failed to run correctly")
-            return CmdStatus.INCORRECT, None
-    except subprocess.TimeoutExpired:
-        p_run.kill()
-        logging.warning("Benchmark run timed out\n")
-        return CmdStatus.TIMEOUT, None
-    """
     pbbs_time_str = str(out)
     pbbs_time_str_arr = pbbs_time_str.split('\\n')
     pbbs_time_str_split = [s for s in pbbs_time_str_arr if "PBBS-time" in s];
@@ -438,24 +376,6 @@ def run_benchmark_pbbs_v2(lazy_benchmark_options, benchmark_obj, num_cores, outp
             return CmdStatus.INCORRECT, None
         elif (status == CmdStatus.TIMEOUT):
             return CmdStatus.TIMEOUT, None
-
-
-        """
-        p_run = subprocess.Popen(run_cmd, shell=True, stdout=subprocess.PIPE)
-        try:
-            out, err = p_run.communicate(check_benchmark_timout)
-            logging.debug(str(out))
-            logging.warning(str(err))
-            logging.debug(p_run.returncode)
-            #if err:
-            if p_run.returncode == 139:
-                logging.warning("Benchmark failed to run correctly")
-                return CmdStatus.INCORRECT, None
-        except subprocess.TimeoutExpired:
-            p_run.kill()
-            logging.warning("Benchmark run timed out\n")
-            return CmdStatus.TIMEOUT, None
-        """
 
         pbbs_time_str = str(out)
         pbbs_time_str_arr = pbbs_time_str.split('\\n')
@@ -521,25 +441,6 @@ def run_check_benchmark_pbbs_v2(lazy_benchmark_options, benchmark_obj, output_fi
     test_cmd = goto_dir_test + " && pwd && " + binary_test + " " + arguments_test
 
     return runcmd(test_cmd, check_benchmark_timout, run_error_handler, lazy_benchmark_options);
-
-    """
-    p_check = subprocess.Popen(test_cmd,  shell=True ,stdout=subprocess.PIPE)
-    try:
-        #p_check.wait(check_benchmark_timout)
-        out, err = p_check.communicate(check_benchmark_timout)
-        logging.debug(str(out))
-        logging.warning(str(err))
-
-        if p_check.returncode:
-            logging.warning("Benchmark check failed to run correctly")
-            return CmdStatus.INCORRECT
-    except subprocess.TimeoutExpired:
-        p_check.kill()
-        logging.warning("Benchmark check timeout out")
-        assert(0)
-        return CmdStatus.TIMEOUT
-    return CmdStatus.CORRECT, ""
-    """
 
 def execute_benchmark(benchmark_obj, lazy_benchmark_options, csv_writer, csv_file, test_cores, data_set):
     for num_cores in test_cores:
