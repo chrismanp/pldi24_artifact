@@ -3,6 +3,9 @@ FROM cpakha/lazydcompbase:latest
 
 LABEL maintainer "ULI group"
 
+RUN ln -s /lib/x86_64-linux-gnu/libtinfo.so  /lib/x86_64-linux-gnu/libtinfo.so.5
+RUN ln -s /lib/x86_64-linux-gnu/libedit.so /lib/x86_64-linux-gnu/libedit.so.0
+
 # Unpack the runtime library
 RUN mkdir opencilk
 RUN mkdir opencilk/cheetah/
@@ -23,10 +26,12 @@ RUN mkdir /home/user/cilkbench
 RUN mkdir /home/user/cilkbench/oDir
 
 WORKDIR /home/user/cilkbench
+RUN ln -s ../pbbsbench/benchmarks pbbs_v2
 RUN mv ../cilk5 cilk5
 
 # Move the test script
 ADD lazybenchmark.csv           /home/user/cilkbench
+ADD lazybenchmark_big.csv       /home/user/cilkbench
 ADD justmis.csv                 /home/user/cilkbench
 ADD parse_lazybenchmark_csv.py  /home/user/cilkbench
 ADD testBenchmark_compile.py    /home/user/cilkbench
