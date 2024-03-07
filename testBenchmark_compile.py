@@ -116,13 +116,13 @@ def runcmd(cmd, timeout, error_handler, lazy_benchmark_options):
     else:
         dump_string("Command: " + cmd, 0, lazy_benchmark_options.verbose)
 
-    p_process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    p_process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
         out, err = p_process.communicate(timeout)
+        dump_string(out.decode("utf-8"), 0, lazy_benchmark_options.verbose)
+        dump_string(err.decode("utf-8"), 1, lazy_benchmark_options.verbose)
         out = str(out)
         err = str(err)
-        dump_string(out, 0, lazy_benchmark_options.verbose)
-        dump_string(err, 1, lazy_benchmark_options.verbose)
         status, error_string = error_handler(p_process, out, err)
         return status, error_string, out, err
     except subprocess.TimeoutExpired:
@@ -525,26 +525,6 @@ def execute_benchmark_top(benchmark_obj, lazy_benchmark_options, csv_writer, csv
 
         # Run the benchmark for a different number of cores.
         written_row = execute_benchmark(benchmark_obj, lazy_benchmark_options, csv_writer, csv_file, test_cores, data_set);
-
-    # Is this even needed?
-"""
-    if written_row == int(ColName.TIME):
-        row = [""] * (num_cols + lazy_benchmark_options.num_tests-1)
-
-        if(lazy_benchmark_options.measure_icache):
-            row = [""] * (num_cols + (lazy_benchmark_options.num_tests+2) - 1)
-
-        if(lazy_benchmark_options.measure_promotedtask):
-            row = [""] * (num_cols + (lazy_benchmark_options.num_tests+3) - 1)
-
-        row[int(ColName.BENCHMARK)] = benchmark_obj.name + "/" + benchmark_obj.binary
-        if compile_status:
-            row[int(ColName.COMPILES)] = "Yes"
-        else:
-            row[int(ColName.COMPILES)] = "No"
-        row[written_row+1] = compiler_error
-        csv_writer.writerow(row)
-"""
 
 
 
