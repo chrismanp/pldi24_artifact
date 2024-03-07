@@ -24,9 +24,9 @@ RUN git clone https://github.com/user-level-interrupts/pbbsbench.git /home/user/
 # Set up the environment for executing the code
 RUN mkdir /home/user/cilkbench
 RUN mkdir /home/user/cilkbench/oDir
+RUN mkdir /home/user/lazyDir
 
 WORKDIR /home/user/cilkbench
-RUN ln -s ../pbbsbench/benchmarks pbbs_v2
 RUN mv ../cilk5 cilk5
 
 # Move the test script
