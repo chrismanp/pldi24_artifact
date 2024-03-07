@@ -101,7 +101,7 @@ def get_cilklowering_str(cilk_lowering) :
 
 def dump_string(str, w, v):
     if w:
-        logging.warning(str)
+        logging.debug(str)
     else:
         logging.debug(str)
     if(v):
@@ -126,7 +126,7 @@ def runcmd(cmd, timeout, error_handler, lazy_benchmark_options):
         status, error_string = error_handler(p_process, out, err)
         return status, error_string, out, err
     except subprocess.TimeoutExpired:
-        logging.warning("\nCompilation timed out\n")
+        logging.debug("\nCompilation timed out\n")
         p_process.kill()
         return CmdStatus.TIMEOUT, "Timeout", "", ""
 
@@ -134,14 +134,14 @@ def runcmd(cmd, timeout, error_handler, lazy_benchmark_options):
 
 def compile_error_handler(p_process, out, err):
     if("Error" in out):
-        logging.warning("Compilation failed")
+        logging.debug("Compilation failed")
         return CmdStatus.INCORRECT, "Compilation failed"
     else:
         return CmdStatus.CORRECT, ""
 
 def run_error_handler(p_process, out, err):
     if p_process.returncode:
-        logging.warning("Benchmark failed to run correctly")
+        logging.debug("Benchmark failed to run correctly")
         return CmdStatus.INCORRECT, "Benchmark failed to run correctly"
     else:
         return CmdStatus.CORRECT, ""
@@ -383,7 +383,7 @@ def run_benchmark_pbbs_v2(lazy_benchmark_options, benchmark_obj, num_cores, outp
 
         for pbbs_time_str_elem in pbbs_time_str_split:
             pbbs_time_str_elem_split = pbbs_time_str_elem.split(":")
-            #logging.warning(pbbs_time_str_elem_split)
+            #logging.debug(pbbs_time_str_elem_split)
             if("Parlay time" in pbbs_time_str_elem_split[0]):
                 res_time.append(float(pbbs_time_str_elem_split[1]))
 
@@ -520,7 +520,7 @@ def execute_benchmark_top(benchmark_obj, lazy_benchmark_options, csv_writer, csv
 
             create_status, message, out, err =  create_testfile(benchmark_obj, data_set, lazy_benchmark_options)
             if create_status != CmdStatus.CORRECT:
-                logging.warning("Failed to create test")
+                logging.debug("Failed to create test")
                 continue
 
         # Run the benchmark for a different number of cores.
