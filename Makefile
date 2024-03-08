@@ -3,9 +3,9 @@ ALL_TESTS = fft cholesky nqueens qsort rectmul strassen
 CC ?= gcc
 CXX ?= g++
 
-CFLAGS = -Wall -O3 # -DPIR # -fcilkplus
-CXXFLAGS = -Wall -O3 # -DPIR # -fcilkplus
-LDFLAGS =
+CFLAGS = -Wall -w -O3 # -DPIR # -fcilkplus
+CXXFLAGS = -Wall -w -O3 # -DPIR # -fcilkplus
+LDFLAGS = -w
 
 ifeq ($(SERIAL),1)
 	SERIAL_FLAGS=-Dcilk_for=for -Dcilk_spawn= -Dcilk_sync= 

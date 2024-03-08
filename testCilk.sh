@@ -160,7 +160,9 @@ for Test in $ALLTESTS; do
 		  ($Compiler == "sref") ||
 		  ($Compiler == "serial") ||
 		  ($Compiler == "sgcc") ]]; then
-	    WORKERS="1"
+	    # Script only used for compilation
+	    :
+	    #WORKERS="1"
 	fi
 	CompileTest $Compiler $Test
 	if [[ $? -ne 0 ]]; then break; fi

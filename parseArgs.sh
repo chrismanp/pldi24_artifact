@@ -34,11 +34,11 @@ function usage {
     >&2 echo -e "\t-sr|--sreference : Compile serial elision using the reference pipeline."
     >&2 echo -e "\t-sg|--sgcc : Compile serial elision using GCC."
     >&2 echo -e "\t-s|--serial : Compile serial elision using default Clang pipeline."
-    >&2 echo -e "\t-lf|--lazyfork : Compile lazy fork using default Tapir's pipeline."
-    >&2 echo -e "\t-uf|--ulifork : Compile lazy fork with uli simulation using default Tapir's pipeline."
+    >&2 echo -e "\t-lf|--lazyd2 : Compile with LazyD frequent polling."
+    >&2 echo -e "\t-uf|--lazyd0 : Compile with LazyD infrequent polling."
     >&2 echo -e "\t-uif|--uipifork : Compile lazy fork using uipi with default Tapir's pipeline."
     >&2 echo -e "\t-sf|--sigusrfork : Compile lazy fork using sigusr with default Tapir's pipeline."
-    >&2 echo -e "\t-ef|--eagerdfork : Compile eagerD fork using default Tapir's pipeline."
+    >&2 echo -e "\t-ef|--nopoll : Compile with LazyD no poll."
     >&2 echo -e "\t-x=<int>|--trials=<int> : Specify the number of trials to run."
     >&2 echo -e "\t-w=<int,int,...>|--workers=<int,int,...> : Specify how many workers to use."
     >&2 echo -e "\t-checkrace : Compile with Cilksan race detection."
@@ -101,14 +101,14 @@ do
 	    # SER=1
 	    shift
 	    ;;
-	-lf|--lazyfork)
+	-lf|--lazyd2)
 	    DEFAULT=0
-	    COMPILERS_TO_TEST="$COMPILERS_TO_TEST lazyfork"
+	    COMPILERS_TO_TEST="$COMPILERS_TO_TEST lazyd2"
 	    shift
 	    ;;
-	-uf|--ulifork)
+	-uf|--lazyd0)
 	    DEFAULT=0
-	    COMPILERS_TO_TEST="$COMPILERS_TO_TEST ulifork"
+	    COMPILERS_TO_TEST="$COMPILERS_TO_TEST lazyd0"
 	    shift
 	    ;;
 	-uif|--uipifork)
@@ -121,9 +121,9 @@ do
 	    COMPILERS_TO_TEST="$COMPILERS_TO_TEST sigusrfork"
 	    shift
 	    ;;
-	-ef|--eagerdfork)
+	-ef|--nopoll)
 	    DEFAULT=0
-	    COMPILERS_TO_TEST="$COMPILERS_TO_TEST eagerdfork"
+	    COMPILERS_TO_TEST="$COMPILERS_TO_TEST nopoll"
 	    shift
 	    ;;
 	-c|--check)

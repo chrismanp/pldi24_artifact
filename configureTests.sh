@@ -1,4 +1,4 @@
-COMPILERS="gcc tapir ref stapir sref serial lazyfork ulifork uipifork sigusrfork eagerdfork"
+COMPILERS="gcc tapir ref stapir sref serial lazyd2 lazyd0 uipifork sigusrfork nopoll"
 WORKERS="1 18"
 # NUMTRIALS=3
 
@@ -38,19 +38,24 @@ else
 fi
 echo $TAPIR_LIB
 
-LAZYD_CILK_FLAG="-fforkd=lazy -ftapir=serial -mllvm -noinline-tasks=true -mllvm -experimental-debug-variable-locations=false -mllvm -disable-parallelepilog-insidepfor=true  -fuse-ld=lld -O3"
+LAZYD_CILK_FLAG="-fforkd=lazy -ftapir=serial -mllvm -noinline-tasks=true -mllvm -experimental-debug-variable-locations=false -mllvm -disable-parallelepilog-insidepfor=true  -fuse-ld=lld"
 
-ULI_CILK_FLAG="$LAZYD_CILK_FLAG  --opencilk-resource-dir=../../opencilk/cheetah/build/"
+LAZYD2_CILK_FLAG="$LAZYD_CILK_FLAG -mllvm -lazy-enable-proper-polling=2  --opencilk-resource-dir=../../opencilk/cheetah/build/"
 
+LAZYD0_CILK_FLAG="$LAZYD_CILK_FLAG --opencilk-resource-dir=../../opencilk/cheetah/build/"
+
+NOPOLL_CILK_FLAG="$LAZYD_CILK_FLAG -mllvm -lazy-poll-lowering=nop -mllvm -lazy-disable-unwind-polling=true -mllvm -lazy-disable-unwind-polling2=true --opencilk-resource-dir=../../opencilk/cheetah/build/"
+
+TAPIR_CILK_FLAG="-fopencilk --opencilk-resource-dir=../../opencilk/cheetah/build/ -ldl"
+
+# Not used
 UIPI_CILK_FLAG="-fforkd=uli -ftapir=serial -fuse-ld=lld -mllvm -lazy-poll-lowering=nop -mllvm -disable-lazy-endisui=true  --opencilk-resource-dir=../../opencilk/cheetah/build/"
 SIGUSR_CILK_FLAG="-fforkd=sigusr -ftapir=serial -fuse-ld=lld -mllvm -lazy-poll-lowering=nop -mllvm -disable-lazy-endisui=true "
-EAGERD_CILK_FLAG="-fforkd=eager -ftapir=serial -fuse-ld=lld -fno-omit-frame-pointer  -mno-omit-leaf-frame-pointer -mllvm -eager-set-maxgrainsize=2048 -mllvm -enable-poll-epoch=false"
-TAPIR_CILK_FLAG="-fopencilk --opencilk-resource-dir=../../opencilk/cheetah/build/ -ldl"
 
 REF_CILK_FLAG=-fcilkplus #-fdetach
 GCC_CILK_FLAG=-fcilkplus
 
-SERIAL_CFLAGS="-Dcilk_for=for -Dcilk_spawn=  -Dcilk_sync=  -D_Cilk_for=for -D_Cilk_spawn=  -D_Cilk_sync= "
+SERIAL_CFLAGS="-Dcilk_for=for -Dcilk_spawn=  -Dcilk_sync=  -D_Cilk_for=for -D_Cilk_spawn=  -D_Cilk_sync= --opencilk-resource-dir=../../opencilk/cheetah/build/"
 REPORT_CFLAGS="-Rpass=.* -Rpass-analysis=.*"
 
 CILKSAN_LIB=$TAPIR_LIB
@@ -70,11 +75,11 @@ C_COMPILER() {
 	"stapir") echo "$TAPIR_CC $TAPIR_CILK_FLAG $SERIAL_CFLAGS";;
 	"sref") echo "$REF_PATH/clang $REF_CILK_FLAG $SERIAL_CFLAGS";;
 	"serial") echo "$TAPIR_CC $SERIAL_CFLAGS";;
-	"lazyfork") echo "$TAPIR_CC $LAZYD_CILK_FLAG";;
-	"ulifork") echo "$TAPIR_CC $ULI_CILK_FLAG";;
+	"lazyd2") echo "$TAPIR_CC $LAZYD2_CILK_FLAG";;
+	"lazyd0") echo "$TAPIR_CC $LAZYD0_CILK_FLAG";;
 	"uipifork") echo "$TAPIR_CC $UIPI_CILK_FLAG";;
 	"sigusrfork") echo "$TAPIR_CC $SIGUSR_CILK_FLAG";;
-	"eagerdfork") echo "$TAPIR_CC $EAGERD_CILK_FLAG";;
+	"nopoll") echo "$TAPIR_CC $NOPOLL_CILK_FLAG";;
 	"gcc") echo "gcc $GCC_CILK_FLAG";;
 	"sgcc") echo "gcc $GCC_CILK_FLAG $SERIAL_CFLAGS";;
 	*) echo "Unknown compiler $1"; exit 1;;
@@ -88,11 +93,11 @@ CXX_COMPILER() {
 	"stapir") echo "$TAPIR_CXX $TAPIR_CILK_FLAG $SERIAL_CFLAGS";;
 	"sref") echo "$REF_PATH/clang++ $REF_CILK_FLAG $SERIAL_CFLAGS";;
 	"serial") echo "$TAPIR_CXX $SERIAL_CFLAGS";;
-	"lazyfork") echo "$TAPIR_CXX $LAZYD_CILK_FLAG";;
-	"ulifork") echo "$TAPIR_CXX $ULI_CILK_FLAG";;
+	"lazyd2") echo "$TAPIR_CXX $LAZYD2_CILK_FLAG";;
+	"lazyd0") echo "$TAPIR_CXX $LAZYD0_CILK_FLAG";;
 	"uipifork") echo "$TAPIR_CXX $UIPI_CILK_FLAG";;
 	"sigusrfork") echo "$TAPIR_CXX $SIGUSR_CILK_FLAG";;
-	"eagerdfork") echo "$TAPIR_CXX $EAGERD_CILK_FLAG";;
+	"nopoll") echo "$TAPIR_CXX $NOPOLL_CILK_FLAG";;
 	"gcc") echo "g++ $GCC_CILK_FLAG";;
 	"sgcc") echo "g++ $GCC_CILK_FLAG $SERIAL_CFLAGS";;
 	*) echo "Unknown compiler $1"; exit 1;;
