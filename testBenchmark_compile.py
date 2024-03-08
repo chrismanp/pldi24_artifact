@@ -34,7 +34,6 @@ class ColName(IntEnum):
     TIME = 10
     ERROR_MSG = 11
 
-
 num_cols = len(results_file_categories) # Of output csv file.
 
 compilation_timeout = 6 * 60 # In seconds.
@@ -44,13 +43,23 @@ n_iteration = 1
 
 # Used to indicate whether a given benchmark ran successfully, with an error, or
 # timed out.
-class CmdStatus(Enum):
+class CmdStatus:
     CORRECT = 1
     INCORRECT = 2
     TIMEOUT = 3
 
-class CilkLowering(Enum):
-    Serial = 0;
+    @staticmethod
+    def asString(status):
+        if status == CmdStatus.CORRECT:
+            return "OK"
+        elif status == CmdStatus.INCORRECT:
+            return "FAIL"
+        elif status == CmdStatus.TIMEOUT:
+            return "TIMEOUT"
+        return f"Unknown Status: {status}"
+
+class CilkLowering:
+    Serial = 0
     LazyD2 = 1
     Nopoll = 2
     SIGUSR = 3
@@ -58,6 +67,42 @@ class CilkLowering(Enum):
     LazyD0 = 5
     CilkPlus = 6
 
+    cilkLowering2cilk5Arg = {
+        Serial: 's',
+        LazyD2: 'lf',
+        Nopoll: 'ef',
+        SIGUSR: 'sf',
+        UIPI: 'uif',
+        LazyD0: 'uf',
+        CilkPlus: 't'
+    }
+
+    cilkLowering2Desc = {
+        Serial:  "Serial",
+        LazyD2: "LazyD with Frequent Polling",
+        Nopoll: "LazyD with No Polling",
+        SIGUSR: 'SigUserInterupts',
+        UIPI: 'HardwareInterupts',
+        LazyD0: "LazyD with InFrequent Polling",
+        CilkPlus: "OpenCilk"
+    }
+
+    @staticmethod
+    def checkValid(opt):
+        if opt not in CilkLowering.cilkLowering2cilk5Arg:
+            raise ValueError(f"{opt} not a valid CilkLowering")
+
+    @staticmethod
+    def getCilk5Arg(opt):
+        CilkLowering.checkValid(opt)
+        return CilkLowering.cilkLowering2cilk5Arg[opt]
+
+    @staticmethod
+    def getDescription(opt):
+        CilkLowering.checkValid(opt)
+        return CilkLowering.cilkLowering2Desc[opt]
+
+    
 class LazyBenchmarkOptions(object):
     def __init__(self, compile_only, execute_only, num_cores, num_tests, benchmarks_to_run, cilk_lowering, task_scheduler, noopt, finergrainsize, measure_icache, measure_promotedtask, disable_numa, verbose, dry_run, wait_load):
         self.compile_only = compile_only
@@ -76,6 +121,12 @@ class LazyBenchmarkOptions(object):
         self.dry_run = dry_run
         self.wait_load = wait_load
 
+    def get_cilklowering_str(self) :
+        return CilkLowering.getDescription(self.cilk_lowering)
+
+    def getCilk5Arg(self):
+        return CilkLowering.getCilk5Arg(self.cilk_lowering)
+
 # Gets string representation of run status.
 def get_run_status_str(run_status):
     if run_status == CmdStatus.CORRECT:
@@ -84,20 +135,6 @@ def get_run_status_str(run_status):
         return "Incorrect"
     else:
         return "Timeout"
-
-def get_cilklowering_str(cilk_lowering) :
-    if(cilk_lowering == CilkLowering.Serial):
-        return "Serial"
-    elif (cilk_lowering == CilkLowering.LazyD2):
-        return "LazyD with Frequent Polling"
-    elif (cilk_lowering == CilkLowering.Nopoll):
-        return "LazyD with No Polling"
-    elif (cilk_lowering == CilkLowering.LazyD0):
-        return "LazyD with InFrequent Polling"
-    elif (cilk_lowering == CilkLowering.CilkPlus):
-        return "OpenCilk"
-    else:
-        assert(0);
 
 def dump_string(str, w, v):
     if w:
@@ -187,25 +224,8 @@ def compile_benchmark_cilk5(lazy_benchmark_options, benchmark_obj, output_dir):
     name = benchmark_obj.benchmark_name+'_'+benchmark_obj.name
     dump_string("Compiling " + name, 0, lazy_benchmark_options.verbose)
 
-    compiler_file_path = output_dir + "/" + name + "_compiler.txt"
-    compile_cmd = ""
-
-    if(lazy_benchmark_options.cilk_lowering == CilkLowering.Serial):
-        compile_cmd = " bash ./testCilk.sh -s -x=0 -w=0 " + benchmark_obj.name
-    elif (lazy_benchmark_options.cilk_lowering == CilkLowering.LazyD2):
-        compile_cmd = " bash ./testCilk.sh -lf -x=0 -w=0 " + benchmark_obj.name
-    elif (lazy_benchmark_options.cilk_lowering == CilkLowering.Nopoll):
-        compile_cmd = " bash ./testCilk.sh -ef -x=0 -w=0 " + benchmark_obj.name
-    elif (lazy_benchmark_options.cilk_lowering == CilkLowering.SIGUSR):
-        compile_cmd = " bash ./testCilk.sh -sf -x=0 -w=0 " + benchmark_obj.name
-    elif (lazy_benchmark_options.cilk_lowering == CilkLowering.UIPI):
-        compile_cmd = " bash ./testCilk.sh -uif -x=0 -w=0 " + benchmark_obj.name
-    elif (lazy_benchmark_options.cilk_lowering == CilkLowering.LazyD0):
-        compile_cmd = " bash ./testCilk.sh -uf -x=0 -w=0 " + benchmark_obj.name
-    elif (lazy_benchmark_options.cilk_lowering == CilkLowering.CilkPlus):
-        compile_cmd = " bash ./testCilk.sh -t -x=0 -w=0 " + benchmark_obj.name
-    else:
-        assert(0);
+    compiler_file_path = f"{output_dir}/{name}_compiler.txt"
+    compile_cmd = f"./compile-cilk.sh {lazy_benchmark_options.getCilk5Arg()} {benchmark_obj.name}"
 
     # Create a function wrapper for this
     #dump_string("Compile command" + compile_cmd, lazy_benchmark_options.verbose)
@@ -310,7 +330,7 @@ def run_benchmark_cilk5(lazy_benchmark_options, benchmark_obj, num_cores, output
     if(lazy_benchmark_options.disable_numa):
         numa_cmd = ""
 
-    binary = "NAIVE_MAPPING=1 CILK_NWORKERS=" + str(num_cores) + " " + numa_cmd + "  ./" + benchmark_obj.binary
+    binary = f"NAIVE_MAPPING=1 CILK_NWORKERS={num_cores} {numa_cmd}  ./{benchmark_obj.binary}.{lazy_benchmark_options.getCilk5Arg()}"
 
     arguments = input_file + " " + str(lazy_benchmark_options.num_tests)
     run_cmd = goto_dir + " && " + binary + " " + arguments
@@ -459,7 +479,7 @@ def execute_benchmark(benchmark_obj, lazy_benchmark_options, csv_writer, csv_fil
         row[int(ColName.DISABLE_NUMA)] = "No"
         if(lazy_benchmark_options.disable_numa):
             row[int(ColName.DISABLE_NUMA)] = "Yes"
-        row[int(ColName.PARALLEL_FRAMEWORK)] = get_cilklowering_str(lazy_benchmark_options.cilk_lowering)
+        row[int(ColName.PARALLEL_FRAMEWORK)] = lazy_benchmark_options.get_cilklowering_str()
         row[int(ColName.TASK_SCHEDULER)] = lazy_benchmark_options.task_scheduler
         row[int(ColName.PFORMAXGRAINSIZE)] = 2048
         if(lazy_benchmark_options.finergrainsize == 1):
@@ -512,7 +532,7 @@ def execute_benchmark_top(benchmark_obj, lazy_benchmark_options, csv_writer, csv
     for data_set in inputs:
         # Used to determine when data set name should be written to csv file.
         # Path from benchmark directory.
-        data_path = benchmark_obj.benchmark_name + "/" + benchmark_obj.name + "/../" + benchmark_obj.data_dir + "/data/" + data_set
+        data_path = f"{benchmark_obj.benchmark_name}/{benchmark_obj.name}/../{benchmark_obj.data_dir}/data/{data_set}"
         if not os.path.isfile(data_path) and (benchmark_obj.benchmark_name == "pbbs_v2") :
             dump_string("No data set: " + data_set + " Creating test file", 0, lazy_benchmark_options.verbose)
 
@@ -520,11 +540,15 @@ def execute_benchmark_top(benchmark_obj, lazy_benchmark_options, csv_writer, csv
             if create_status != CmdStatus.CORRECT:
                 logging.warning("Failed to create test")
                 continue
+            sys.stderr.write("data:{data_set}")
+            sys.stderr.flush()
 
         # Run the benchmark for a different number of cores.
         written_row = execute_benchmark(benchmark_obj, lazy_benchmark_options, csv_writer, csv_file, test_cores, data_set);
-
-
+        sys.stderr.write("ran")
+        sys.stderr.flush()
+    sys.stderr.write("\n")
+    sys.stderr.flush()
 
 def main():
     # Pargse the argument
@@ -610,6 +634,8 @@ def main():
         # Used to determine when benchmark name / compile status should be written
         # to csv file.
         benchmark_path_name = benchmark_obj.benchmark_name + "/" + benchmark_obj.name
+        sys.stderr.write(f"{benchmark_path_name}:")
+        sys.stderr.flush()
 
         dump_string("\nTest " + benchmark_path_name + ":\n", 0, lazy_benchmark_options.verbose)
         dump_string("Settting up test:",  0, lazy_benchmark_options.verbose)
@@ -617,6 +643,8 @@ def main():
         # compile benchmark
         if(not lazy_benchmark_options.execute_only):
             compile_status, compiler_error, out, err = compile_benchmark(lazy_benchmark_options, benchmark_obj, output_dir)
+            sys.stderr.write(f"Compiled-{CmdStatus.asString(compile_status)}:")
+            sys.stderr.flush()
         else:
             compile_status = CmdStatus.CORRECT;
             compiler_error = "testPBBS run without compiling benchmark"
@@ -630,7 +658,7 @@ def main():
             else:
                 row[int(ColName.COMPILES)] = "No"
             row[int(ColName.ERROR_MSG)] = compiler_error
-            row[int(ColName.PARALLEL_FRAMEWORK)] = get_cilklowering_str(lazy_benchmark_options.cilk_lowering)
+            row[int(ColName.PARALLEL_FRAMEWORK)] = lazy_benchmark_options.get_cilklowering_str()
             row[int(ColName.TASK_SCHEDULER)] = lazy_benchmark_options.task_scheduler
             row[int(ColName.PFORMAXGRAINSIZE)] = 2048
             if(lazy_benchmark_options.finergrainsize == 1):

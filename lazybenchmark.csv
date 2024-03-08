@@ -9,7 +9,6 @@ cilk5,fib,fib,,fib,,"42 ","30 "
 cilk5,rectmul,rectmul,,rectmul,,"-x 4096 -y 4096 -z 2048  -r ","-x 4096 -y 4096 -z 2048  -r "
 cilk5,fft,fft,,fft,,"-n 10000000  -r ","-n 10000000 -r "
 cilk5,cholesky,cholesky,,cholesky,,"-n 4000 -z 8000  -r ","-n 4000 -z 8000  -r "
-#cilk5,qsort,qsort,,qsort,,"4500000 ","4500000 "
 # PBBS_v2
 pbbs_v2,delaunayTriangulation/incrementalDelaunay,delaunay,delaunayCheck,geometryData,"","2DinCube_1000000"
 pbbs_v2,invertedIndex/parallel,index,indexCheck,sequenceData,"","wikisamp.xml"
@@ -39,4 +38,3 @@ pbbs_v2,integerSort/parallelRadixSort,isort,isortCheck,sequenceData,"","randomSe
 pbbs_v2,histogram/parallel,histogram,histogramCheck,sequenceData,"","randomSeq_10M_int"
 pbbs_v2,nBody/parallelCK/,nbody,nbodyCheck,geometryData,"","3DinCube_100000"
 pbbs_v2,breadthFirstSearch/deterministicBFS/,BFS,BFSCheck,graphData,"","rMatGraph_J_12_2250000"
-#pbbs_v2,rayCast/kdTree,ray,rayCheck,geometryData,"","happyTriangles ../geometryData/data/happyRays"

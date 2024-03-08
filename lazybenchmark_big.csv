@@ -27,4 +27,3 @@ pbbs_v2,integerSort/parallelRadixSort,isort,isortCheck,sequenceData,"","randomSe
 pbbs_v2,histogram/parallel,histogram,histogramCheck,sequenceData,"","randomSeq_100M_int"
 pbbs_v2,nBody/parallelCK/,nbody,nbodyCheck,geometryData,"","3DinCube_1000000"
 pbbs_v2,breadthFirstSearch/deterministicBFS/,BFS,BFSCheck,graphData,"","rMatGraph_J_12_32000000"
-#pbbs_v2,rayCast/kdTree,ray,rayCheck,geometryData,"","happyTriangles ../geometryData/data/happyRays"

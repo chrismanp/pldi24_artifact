@@ -39,6 +39,9 @@ ADD testBenchmark_compile.py    /home/user/cilkbench
 ADD configureTests.sh /home/user/cilkbench
 ADD parseArgs.sh      /home/user/cilkbench
 ADD testCilk.sh       /home/user/cilkbench
+ADD compile-cilk.sh   /home/user/cilkbench
+
+RUN chmod +x          /home/user/cilkbench/testCilk.sh
 
 # From cilk5's Makefile
 ADD Makefile          /home/user/cilkbench/cilk5
