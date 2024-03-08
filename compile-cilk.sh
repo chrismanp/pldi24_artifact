@@ -46,7 +46,30 @@ if [ $force == 0 ]; then
 	exit 0
     fi
 fi
-./testCilk.sh -${model} -x=0 -w=0 ${benchmark}
+# convert our suffix name into a switch for testCilk compilation
+case $model in
+    pnnt)
+	modelswitch=t
+	;;
+    pnnuf)
+	modelswitch=uf
+	;;
+    pnnlf)
+	modelswitch=f
+	;;
+    pnnef)
+	modelswitch=ef
+	;;
+    pnns)
+	modelswitch=s
+	;;
+    *)
+	echo "Bad model"
+	exit -1
+	;;
+esac
+# run compile command
+./testCilk.sh -${modelswitch} -x=0 -w=0 ${benchmark}
 status=$?
 if [ $status == 0 ]; then
     echo "Saving to ${target}"
