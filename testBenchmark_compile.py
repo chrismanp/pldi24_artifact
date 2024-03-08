@@ -423,6 +423,7 @@ compileFunction = {
 # simplified error string, which is "" if timeout or no error.
 # if everything works, we only return LAST status, error, out, err
 def compile_benchmark(options, benchmark_obj, output_dir):
+    compile_status, compiler_error, out, err = CmdStatus.CORRECT, "never executed", "", ""
     for sched in options.task_scheduler:
         for noopt in options.noopt:
             for finergrainsize in options.finergrainsize:
