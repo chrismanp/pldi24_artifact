@@ -43,10 +43,20 @@ n_iteration = 1
 
 # Used to indicate whether a given benchmark ran successfully, with an error, or
 # timed out.
-class CmdStatus(Enum):
+class CmdStatus:
     CORRECT = 1
     INCORRECT = 2
     TIMEOUT = 3
+
+    @staticmethod
+    def asString(status):
+        if status == CmdStatus.CORRECT:
+            return "OK"
+        elif status == CmdStatus.INCORRECT:
+            return "FAIL"
+        elif status == CmdStatus.TIMEOUT:
+            return "TIMEOUT"
+        return f"Unknown Status: {status}"
 
 class CilkLowering:
     Serial = 0
@@ -522,7 +532,7 @@ def execute_benchmark_top(benchmark_obj, lazy_benchmark_options, csv_writer, csv
     for data_set in inputs:
         # Used to determine when data set name should be written to csv file.
         # Path from benchmark directory.
-        data_path = benchmark_obj.benchmark_name + "/" + benchmark_obj.name + "/../" + benchmark_obj.data_dir + "/data/" + data_set
+        data_path = f"{benchmark_obj.benchmark_name}/{benchmark_obj.name}/../{benchmark_obj.data_dir}/data/{data_set}"
         if not os.path.isfile(data_path) and (benchmark_obj.benchmark_name == "pbbs_v2") :
             dump_string("No data set: " + data_set + " Creating test file", 0, lazy_benchmark_options.verbose)
 
@@ -530,10 +540,15 @@ def execute_benchmark_top(benchmark_obj, lazy_benchmark_options, csv_writer, csv
             if create_status != CmdStatus.CORRECT:
                 logging.warning("Failed to create test")
                 continue
+            sys.stderr.write("data:{data_set}")
+            sys.stderr.flush()
 
         # Run the benchmark for a different number of cores.
         written_row = execute_benchmark(benchmark_obj, lazy_benchmark_options, csv_writer, csv_file, test_cores, data_set);
-
+        sys.stderr.write("ran")
+        sys.stderr.flush()
+    sys.stderr.write("\n")
+    sys.stderr.flush()
 
 def main():
     # Pargse the argument
@@ -619,6 +634,8 @@ def main():
         # Used to determine when benchmark name / compile status should be written
         # to csv file.
         benchmark_path_name = benchmark_obj.benchmark_name + "/" + benchmark_obj.name
+        sys.stderr.write(f"{benchmark_path_name}:")
+        sys.stderr.flush()
 
         dump_string("\nTest " + benchmark_path_name + ":\n", 0, lazy_benchmark_options.verbose)
         dump_string("Settting up test:",  0, lazy_benchmark_options.verbose)
@@ -626,6 +643,8 @@ def main():
         # compile benchmark
         if(not lazy_benchmark_options.execute_only):
             compile_status, compiler_error, out, err = compile_benchmark(lazy_benchmark_options, benchmark_obj, output_dir)
+            sys.stderr.write(f"Compiled-{CmdStatus.asString(compile_status)}:")
+            sys.stderr.flush()
         else:
             compile_status = CmdStatus.CORRECT;
             compiler_error = "testPBBS run without compiling benchmark"
