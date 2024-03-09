@@ -87,6 +87,14 @@ Use the following command to compile your own cilk code
         -Wall -O3  yourcilkcode.c   -o yourcilkcode
 ```
 
+To run the program, simply execute
+
+```console
+  CILK_NWORKERS=<number of cores> ./yourcilkcode <..args..>
+```
+
+Currently lazyD still depends on the opencilk-resource-dir parameter for locating the cilk header.
+
 # Limitation
 
 - LazyD is only able to compile cilk_for, cilk_spawn, and cilk_sync. It is not able to compile OpenCilk's hyberobject.
