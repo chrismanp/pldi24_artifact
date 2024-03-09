@@ -65,7 +65,7 @@ The following our the directories that user most likely interact in lazyDir:
 
   - parlay/internal/scheduler_plugins/opencilk.h : Contains the implementation of different scheduling mechanism for parallel-for. 
 
-# Evaluating LazyD Perforamnce against OpenCilk
+# Evaluating LazyD Performance
 Run 
 
 ```console
