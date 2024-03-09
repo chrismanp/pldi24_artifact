@@ -1,4 +1,8 @@
-# Getting started
+# Introduction
+
+LazyD is compiler and runtime that compiles a Cilk code and generate low overhead fork-joins and parallel-loop.
+
+# Trying LazyD on a Docker
 
 1. Pull the docker image :
 
@@ -12,7 +16,7 @@ docker pull cpakha/lazydcompiler:latest
 docker run --privileged -v <host_directory>:/home/user/lazyDir -it cpakha/lazydcompiler:latest
 ```
 
-# Setting up the folders
+3. Setting up the folders
 
 Execute :
 
@@ -61,7 +65,7 @@ The following our the directories that user most likely interact in lazyDir:
 
   - parlay/internal/scheduler_plugins/opencilk.h : Contains the implementation of different scheduling mechanism for parallel-for. 
 
-# Running the evaluation
+# Evaluating LazyD Perforamnce against OpenCilk
 Run 
 
 ```console
@@ -70,3 +74,22 @@ Run
 
 to evaluate the performance of LazyD and OpenCilk.
 This will generate data needed for our claim in artifact.pdf
+
+# Compile your own code
+
+Use the following command to compile your own cilk code
+
+```console
+  clang -fforkd=lazy -ftapir=serial -mllvm -noinline-tasks=true \
+        -mllvm -experimental-debug-variable-locations=false \
+        -mllvm -disable-parallelepilog-insidepfor=true \
+        -fuse-ld=lld  --opencilk-resource-dir=../../opencilk/cheetah/build/ \
+        -Wall -O3  yourcilkcode.c   -o yourcilkcode
+```
+
+# Limitation
+
+- LazyD is only able to compile cilk_for, cilk_spawn, and cilk_sync. It is not able to compile OpenCilk's hyberobject.
+- LazyD Parallel-Ready Loop is not the default lowering of parallel-for and needs to be enable using -fpfor-spawn-strategy=2.
+- LazyD Parallel-Ready Loop has issue in dealing with non-AddRec Scalar evolution.
+- There are still bugs when compiling complicated Cilk code. For that reason LazyD have to disable certain compiler features.
