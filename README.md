@@ -1,6 +1,6 @@
 # Introduction
 
-LazyD is compiler and runtime that compiles a Cilk code and generate low overhead fork-joins and parallel-loop.
+LazyD is compiler and runtime that compiles a Cilk code and generate low overhead fork-joins and parallel-for.
 
 # Trying LazyD on a Docker
 
@@ -98,6 +98,7 @@ Currently lazyD still depends on the opencilk-resource-dir parameter for locatin
 # Limitation
 
 - LazyD is only able to compile cilk_for, cilk_spawn, and cilk_sync. It is not able to compile OpenCilk's hyberobject.
-- LazyD Parallel-Ready Loop is not the default lowering of parallel-for and needs to be enable using -fpfor-spawn-strategy=2.
-- LazyD Parallel-Ready Loop has issue in dealing with non-AddRec Scalar evolution.
-- There are still bugs when compiling complicated Cilk code. For that reason LazyD have to disable certain compiler features.
+- LazyD Parallel-Ready Loop is not the default lowering of parallel-for and needs to be enabled using -fpfor-spawn-strategy=2.
+- LazyD Parallel-Ready Loop has an issue in dealing with non-AddRec Scalar evolution.
+- There are still bugs when compiling complicated Cilk code. For that reason, LazyD has to disable certain compiler features.
+- There are still cases where it may fail to compile complex fork-joins or parallel-for. For a quick fix, isolate these fork-joins or parallel-for into their own function.
