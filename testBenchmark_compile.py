@@ -121,7 +121,7 @@ class CilkLowering:
                 raise ValueError(f"{opt} not a valid lowering method")
             result.append(CilkLowering.asarg[opt])
         return result
-    
+
 class CompilerOptions:
     def __init__(self, task_scheduler, noopt, finergrainsize, cilk_lowering, suffix):
         self.cilk_lowering = cilk_lowering
@@ -168,21 +168,21 @@ parser.add_argument("--num_tests", default=1, type=int, help="Number of runs per
 parser.add_argument("--execute", action='store_true', help="Only execute benchmark, don't compile")
 parser.add_argument("--disable_numa", action='store_true', help="Disable numa when running the benchmark")
 parser.add_argument("--icache", action='store_true', help="Run the icache experiment")
-parser.add_argument("--parallel_framework", nargs='+', 
-                    default=['tapir'], 
+parser.add_argument("--parallel_framework", nargs='+',
+                    default=['tapir'],
                     choices=['lazyd0', 'lazyd2', 'nopoll', 'serial', 'tapir'],
                     help="What parallel framework to use. Default: tapir")
-parser.add_argument("--fg", 
-                    default=['no'], 
-                    choices=['yes', 'no', 'both'], 
+parser.add_argument("--fg",
+                    default=['no'],
+                    choices=['yes', 'no', 'both'],
                     help="Use finer grainsize. Only for LazyD and OpenCilk-fg. Default: no")
-parser.add_argument("--noopt", 
-                    default=['no'], 
-                    choices=['yes', 'no', 'both'], 
+parser.add_argument("--noopt",
+                    default=['no'],
+                    choices=['yes', 'no', 'both'],
                     help="Ignore users grainsize.  Default: no")
-parser.add_argument("--schedule_tasks", 
-                    default=["PBBS"], 
-                    nargs='+', 
+parser.add_argument("--schedule_tasks",
+                    default=["PBBS"],
+                    nargs='+',
                     choices=['PRC', 'PRL', 'DELEGATEPRC', 'PRCPRL', 'DELEGATEPRCPRL', 'OPENCILKDEFAULT_FINE', 'PBBS'],
                     help="How to scheduler parallel task in pfor.")
 parser.add_argument("--ifile", default="lazybenchmark.csv", help="Input file")
@@ -326,7 +326,7 @@ def maybeRename(old, new):
     dump_string(f"Command: rename {old} -> {new}", 0, verbose)
     os.rename(old, new)
 
-# generates an exe suffix for options.  
+# generates an exe suffix for options.
 # Some combinations don't make sense, for those return False
 def makeExeSuffix(benchmark, sched, usergrain, fine, lowering):
     if verbose:
@@ -337,6 +337,12 @@ def makeExeSuffix(benchmark, sched, usergrain, fine, lowering):
         if sched != 'PBBS':
             return False, ''
     elif benchmark == 'pbbs_v2':
+        if sched == "OPENCILKDEFAULT_FINE":
+            if lowering != CilkLowering.CilkPlus:
+                return False, ''
+            else:
+                if not fine:
+                    return False, ''
         if not (sched == 'DELEGATEPRCPRL' or sched == 'PBBS'):
             if usergrain:
                 return False, ''
@@ -366,7 +372,7 @@ def compile_benchmark_pbbs_v2(suffix, task_scheduler, noopt, finergrainsize, cil
     # executable path and name
     destdir = f"{benchmark_obj.benchmark_name}/{benchmark_obj.name}"
     exename = f"{destdir}/{benchmark_obj.binary}.{suffix}"
-    
+
     # see if option we need it already there?
     if os.path.exists(exename):
         return CmdStatus.CORRECT, "", "Exists", ""
@@ -408,7 +414,7 @@ def compile_benchmark_pbbs_v2(suffix, task_scheduler, noopt, finergrainsize, cil
     # finally add 'make' and make into a string
     compile_cmd.append("make")
     compileString = " ".join(compile_cmd)
-        
+
     compile_status, compiler_error, out, err = runcmd(compileString, compilation_timeout, compile_error_handler);
     if compile_status == CmdStatus.CORRECT:
         maybeRename(f"{destdir}/{benchmark_obj.binary}", exename)
@@ -423,6 +429,7 @@ compileFunction = {
 # simplified error string, which is "" if timeout or no error.
 # if everything works, we only return LAST status, error, out, err
 def compile_benchmark(options, benchmark_obj, output_dir):
+    compile_status, compiler_error, out, err = CmdStatus.CORRECT, "never executed", "", ""
     for sched in options.task_scheduler:
         for noopt in options.noopt:
             for finergrainsize in options.finergrainsize:
@@ -436,11 +443,11 @@ def compile_benchmark(options, benchmark_obj, output_dir):
                         pass
                     cfunc = compileFunction[benchmark_obj.benchmark_name]
                     compile_status, compiler_error, out, err = cfunc(suffix,
-                                                                     sched, 
-                                                                     noopt, 
-                                                                     finergrainsize, 
-                                                                     cilk_lowering, 
-                                                                     benchmark_obj, 
+                                                                     sched,
+                                                                     noopt,
+                                                                     finergrainsize,
+                                                                     cilk_lowering,
+                                                                     benchmark_obj,
                                                                      output_dir)
                     if compile_status != CmdStatus.CORRECT:
                         return compile_status, compiler_error, out, err
@@ -490,7 +497,12 @@ def run_benchmark_cilk5(lazy_benchmark_options, suffix, benchmark_obj, num_cores
     if(lazy_benchmark_options.disable_numa):
         numa_cmd = ""
 
-    binary = f"NAIVE_MAPPING=1 CILK_NWORKERS={num_cores} {numa_cmd}  ./{benchmark_obj.binary}.{suffix}"
+    icache_cmd = ""
+    if (lazy_benchmark_options.measure_icache):
+        icache_cmd = "perf stat -x, -e icache.misses,icache.hit -a"
+
+
+    binary = f"NAIVE_MAPPING=1 CILK_NWORKERS={num_cores} {numa_cmd} {icache_cmd}  ./{benchmark_obj.binary}.{suffix}"
 
     arguments = input_file + " " + str(lazy_benchmark_options.num_tests)
     run_cmd = goto_dir + " && " + binary + " " + arguments
@@ -526,7 +538,7 @@ def run_benchmark_pbbs_v2(lazy_benchmark_options, suffix, benchmark_obj, num_cor
     gotodir = f"cd {benchmark_obj.benchmark_name}/{benchmark_obj.name}"
 
     # common options to all runs
-    cmd = [gotodir, 
+    cmd = [gotodir,
            "&&",
            "NAIVE_MAPPING=1",
            f"CILK_NWORKERS={num_cores}",
@@ -537,7 +549,7 @@ def run_benchmark_pbbs_v2(lazy_benchmark_options, suffix, benchmark_obj, num_cor
     # add icache perf if needed
     if lazy_benchmark_options.measure_icache:
         cmd.append("perf stat -x, -e icache.misses,icache.hit -a")
-        
+
     # actually binary we are testing
     cmd.append(f"./{benchmark_obj.binary}.{suffix}")
 
@@ -653,8 +665,8 @@ def execute_benchmark(benchmark_obj, options, iopt, csv_writer, csv_file, test_c
         if(iopt.noopt == 1):
             row[int(ColName.IGNORE_USER_PFORGAINSIZE)] = "Yes"
 
-        dump_string("Running benchmark: %s dataset: %s, num_cores: %s\n" % (benchmark_obj.binary, data_set, num_cores), 
-                    0, 
+        dump_string("Running benchmark: %s dataset: %s, num_cores: %s\n" % (benchmark_obj.binary, data_set, num_cores),
+                    0,
                     verbose)
 
         # Make sure paths adjusted when executing commands
@@ -705,7 +717,7 @@ def execute_benchmark_top(benchmark_obj, options, csv_writer, csv_file, test_cor
                     else:
                         # print(f"EXEC Skipping {benchmark_obj.benchmark_name}, {sched}, {noopt}, {finergrainsize}, {cilk_lowering}")
                         pass
-                        
+
 
     # Go through the benchmark's data sets.
     inputs = benchmark_obj.standard_inputs
