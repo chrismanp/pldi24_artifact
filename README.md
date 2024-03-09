@@ -1,6 +1,8 @@
 # Introduction
 
 LazyD is compiler and runtime that compiles a Cilk code and generate low overhead fork-joins and parallel-for.
+It relies on stack-walk and code-versioning to generate efficient parallel constructs.
+It creates parallelism only when an idle thread requests parallel tasks, eliminating the control overhead of managing parallel constructs when not needed.
 
 # Trying LazyD on a Docker
 
