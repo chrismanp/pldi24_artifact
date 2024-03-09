@@ -51,6 +51,8 @@ The following our the directories that user most likely interact in lazyDir:
 
   - oDir/lazybenchmark_output_files*/lazbenchmark_results.csv : Stores the result of the evaluation as a CSV file.
 
+  - oDir/lazybenchmark_output_files*/log.txt : Logs the execution of testBenchmark_compile.py.
+
   - lazybenchmark.csv : Stores the benchmark that testBenchmark_compile.py used to compile and execute.
 
 - pbbsbench
