@@ -16,7 +16,7 @@ docker run --privileged -v <host_directory>:/home/user/lazyDir -it cpakha/lazydc
 
 Execute :
 
-```conosle
+```console
 /home/user/setup.sh
 ```
 
