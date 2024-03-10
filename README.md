@@ -200,5 +200,5 @@ Running the program can be done by simply executing:
 - LazyD is only able to compile cilk_for, cilk_spawn, and cilk_sync. It is not able to compile OpenCilk's hyberobject.
 - LazyD's Parallel-Ready Loop is not the default lowering of parallel-for and needs to be enabled using -fpfor-spawn-strategy=2.
 - LazyD can not convert parallel loops with non-Add Recurrence evolution.
-- LazyD can not compile a parallel region inlined inside another parallel region. For this reason, LazyD prevents the inliner from inlining a function that contains a parallel region into another parallel region.
+- LazyD can not compile a parallel region inlined inside another parallel region. For this reason, LazyD has the option to prevent the inliner from inlining a function that contains a parallel region into another parallel region. This is controlled by the `-mllvm -disable-parallelepilog-insidepfor` and `-mllvm -noinline-tasks` flag. The default value is false.
 - There are still cases where LazyD may fail to compile complex fork-joins or parallel-for. For a quick fix, isolate these fork-joins or parallel-for into their own function.
