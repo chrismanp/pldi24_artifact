@@ -1,36 +1,46 @@
-# Introduction
+# Introduction of LazyD
 
-LazyD is compiler and runtime that compiles a Cilk code and generate low overhead fork-joins and parallel-for.
-It relies on stack-walk and code-versioning to generate efficient parallel constructs.
-It creates parallelism only when an idle thread requests parallel tasks, eliminating the control overhead of managing parallel constructs when not needed.
+LazyD is a compiler and runtime that compiles a Cilk code, generating low-overhead fork-joins and parallel-for, and creates parallelism on a request from an idle thread.
+Hence, the control overhead of managing parallel constructs is eliminated when parallelism is not needed.
+LazyD attempts to improve the performance of a parallel program when the overhead of the parallel construct is significant
+and when using a coarser grain size can cause load imbalance on a higher core count.
+It relies on stack-walk, code-versioning, and polling to generate low-overhead parallel constructs.
+It is built on top of the OpenCilk compiler and takes advantage of Tapir optimization.
 
 # Trying LazyD on a Docker
 
-1. Pull the docker image :
+We provide a docker image that users can use to try out LazyD on their own Cilk code.
+The following are the instructions for setting up the docker image.
+
+1. Pulling the docker image :
 
 ```console
 docker pull cpakha/lazydcompiler:latest
 ```
 
-2. Run the docker using :
+2. Running the docker:
 
 ```console
 docker run --privileged -v <host_directory>:/home/user/lazyDir -it cpakha/lazydcompiler:latest
 ```
 
-3. Setting up the folders
+We recommend the following options when the docker:
 
-Execute :
+- --user=<uid>:<gid> This will set the user ID to <uid> and the group ID to <gid>. 
+- --rm Remove the container once the docker has been exited
+
+3. Setting up the folders:
 
 ```console
 /home/user/setup.sh
 ```
 
-This setup the directory needed for evaluation in the host directory (/home/user/lazyDir).
+This sets up the directory needed for evaluation in the host directory (/home/user/lazyDir).
 
-# Navigating important directories
-After setup.sh, lazyDir contains 3 directories: cilkbench, opencilk, and pbbsbench
-The following our the directories that user most likely interact in lazyDir:
+## Navigating important directories
+
+After setup.sh, lazyDir contains three directories: cilkbench, opencilk, and pbbsbench.
+The following are the directories that users most likely interact in lazyDir:
 
 - cilkbench: The cilkbench is the directory where users evaluate LazyD's performance
 
@@ -65,23 +75,30 @@ The following our the directories that user most likely interact in lazyDir:
 
   - pbbsbench/testData/geometryData/: Stores the dataset for geometry problem.
 
-  - common/parallelDefs: Contains different compiler options that affects the lowering of parallel-for and fork-join.
+  - common/parallelDefs: Contains different compiler options that affect the lowering of parallel-for and fork-join.
 
   - parlay/internal/scheduler_plugins/opencilk.h : Contains the implementation of different scheduling mechanism for parallel-for. 
 
 # Evaluating LazyD Performance
-Run 
+
+We claim that LazyD has 
+
+1) LazyD’s parallel construct has a smaller overhead compared to OpenCilk
+2) Exposing more parallelism using LazyD’s does not significantly degrade performance.
+3) LazyD prevents load imbalance by exposing more parallelism.
+4) LazyD’s ICache miss rate is similar to OpenCilk’s.
+
+To evaluate our claim, run the following command in the lazyDir/cilkbench directory:
 
 ```console
 /home/user/lazyDir/cilkbench/run-eval.sh <Number of workers> <Number of runs> <disable numa>
+/home/user/lazyDir/cilkbench/run-icache.sh <Number of workers> <Number of runs> <disable numa>
 ```
 
-to evaluate the performance of LazyD and OpenCilk.
-This will generate data needed for our claim in artifact.pdf
+This will generate the data needed for our claim in artifact.pdf
 
 # Compile your own code
-
-Use the following command to compile your own cilk code
+If users are interested in evaluating LazyD performance on their own Cilk code, use the following command:
 
 ```console
   clang -fforkd=lazy -ftapir=serial -mllvm -noinline-tasks=true \
@@ -91,18 +108,19 @@ Use the following command to compile your own cilk code
         -Wall -O3  yourcilkcode.c   -o yourcilkcode
 ```
 
-To run the program, simply execute
+The artifact.pdf provides an exhaustive list of the compiler's options.
+Currently, lazyD still depends on the opencilk-resource-dir parameter for locating the cilk header.
+Running the program can be done by simply executing:
 
 ```console
-  CILK_NWORKERS=<number of cores> ./yourcilkcode <..args..>
+  CILK_NWORKERS=<number of cores> ./yourcilkcode <..,args,..>
 ```
-
-Currently lazyD still depends on the opencilk-resource-dir parameter for locating the cilk header.
 
 # Limitation
 
 - LazyD is only able to compile cilk_for, cilk_spawn, and cilk_sync. It is not able to compile OpenCilk's hyberobject.
 - LazyD Parallel-Ready Loop is not the default lowering of parallel-for and needs to be enabled using -fpfor-spawn-strategy=2.
 - LazyD Parallel-Ready Loop has an issue in dealing with non-AddRec Scalar evolution.
-- There are still bugs when compiling complicated Cilk code. For that reason, LazyD has to disable certain compiler features.
+- There are still bugs when compiling complicated Cilk code. For that reason, LazyD has to turn off certain compiler features.
 - There are still cases where it may fail to compile complex fork-joins or parallel-for. For a quick fix, isolate these fork-joins or parallel-for into their own function.
+ 
