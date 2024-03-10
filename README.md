@@ -132,23 +132,23 @@ options:
                         and OPENCILKDEFAULT_FINE.  (sets env variable GRAINSIZE8=1)
 
   --noopt {yes,no,both}
-                         Ignore parallel-for's grainsize set by user. Default: no
+                         Ignore parallel-for's grainsize set by the user. Default: no
                          Only used in PBBS and DELEGATEPRCPRL.  (sets env variable NOOPT=1)
 
   --schedule_tasks {PRC,PRL,DELEGATEPRC,PRCPRL,DELEGATEPRCPRL,OPENCILKDEFAULT_FINE,PBBS} [{PRC,PRL,DELEGATEPRC,PRCPRL,DELEGATEPRCPRL,OPENCILKDEFAULT_FINE,PBBS} ...]
-                        How to schedule parallel task in pfor. Only valid for the PBBSv2 benchmarks.
+                        How to schedule parallel task in pfor. Only used for the PBBSv2 benchmarks.
 
-                        PBBS : By default is uses the PBBS default sceheduling mechanism.
-                        The PBBS default scheduling mechanism uses divide and conquer
-                        if user set grainsize.
+                        PBBS : By default, it uses the PBBS scheduling mechanism.
+                        The PBBS default scheduling mechanism uses divide and conquer if the user sets grainsize.
                         If grainsize is set to 0, it uses cilk_for parallel construct.
 
-                        OPENCILKDEFAULT_FINE: Similar to PBBS, however if grainsize is set to 0,
-                        the maximum grainsize is set to 8 (Default is 2048).
+                        OPENCILKDEFAULT_FINE: Similar to PBBS. However, if the grainsize is set to 0, 
+			the maximum grainsize is set to 8 (Default is 2048).
                         (sets environment variable OPENCILKDEFAULT_FINE=1)
 
-                        PRC: Similar to PBBS except that we manually lower the cilk_for in source code
-                        using tail recursion eliminiation version of divide and conquer.
+
+                        PRC: Similar to PBBS, except that we manually lower the cilk_for in source code
+                        using the tail recursion elimination version of divide and conquer.
                         (sets environment variable PRC=1)
 
                         PRL: Use parallel-ready loop to lower the parallel-for. (sets env variable PRL=1)
@@ -156,12 +156,10 @@ options:
                         PRCPRL : Uses divide and conquer and then parallel-ready loop
                         for the remaining iteration. (sets env variable PRCPRL=1)
 
-                        DELEGATEPRC : Uses explicit fork and then divide and conquer
-                        for the remaining iteration.  (sets env variable DELEGATEPRC=1)
+                        DELEGATEPRC :  Use the parallel-ready loop to lower the parallel-for. (sets env variable PRL=1)
 
-                        DELEGATEPRCPRL : Uses Explicit fork and then divide and conquer
-                        and then parallel ready loop for the remaining iteration.
-                        (sets environment variable DELEGATEPRCPRL=1)
+                        DELEGATEPRCPRL :  It uses an Explicit fork, then divide and conquer, and 
+			then a parallel ready loop for the remaining iteration. (sets environment variable DELEGATEPRCPRL=1)
 
 
   --ifile IFILE         Input file
