@@ -138,35 +138,39 @@ options:
   --schedule_tasks {PRC,PRL,DELEGATEPRC,PRCPRL,DELEGATEPRCPRL,OPENCILKDEFAULT_FINE,PBBS} [{PRC,PRL,DELEGATEPRC,PRCPRL,DELEGATEPRCPRL,OPENCILKDEFAULT_FINE,PBBS} ...]
                         How to schedule parallel task in pfor. Only used for the PBBSv2 benchmarks.
 
-                        PBBS : By default, it uses the PBBS scheduling mechanism.
-                        The PBBS default scheduling mechanism uses divide and conquer if the user sets grainsize.
+			PBBS : By default, it uses the PBBS scheduling mechanism.
+                        The PBBS default scheduling mechanism uses divide and conquer 
+                        if the grainsize is not equal to 0.
                         If grainsize is set to 0, it uses cilk_for parallel construct.
 
-                        OPENCILKDEFAULT_FINE: Similar to PBBS. However, if the grainsize is set to 0, 
+                        OPENCILKDEFAULT_FINE: Similar to PBBS. 
+                        However, if the grainsize is set to 0, 
 			the maximum grainsize is set to 8 (Default is 2048).
                         (sets environment variable OPENCILKDEFAULT_FINE=1)
 
-
-                        PRC: Similar to PBBS, except that we manually lower the cilk_for in source code
-                        using the tail recursion elimination version of divide and conquer.
+                        PRC: Similar to PBBS, except that we manually 
+                        lower the cilk_for in source code using the tail recursion 
+                        elimination version of divide and conquer.
                         (sets environment variable PRC=1)
 
-                        PRL: Use parallel-ready loop to lower the parallel-for. (sets env variable PRL=1)
+                        PRL: Use parallel-ready loop to lower the parallel-for. 
+                        (sets env variable PRL=1)
 
-                        PRCPRL : Uses divide and conquer and then parallel-ready loop
+                        PRCPRL : Uses PRC and then PRL
                         for the remaining iteration. (sets env variable PRCPRL=1)
 
-                        DELEGATEPRC :  Use the parallel-ready loop to lower the parallel-for. (sets env variable PRL=1)
+                        DELEGATEPRC :  Uses Explicit fork and then PRC 
+                        for the remaining iteration.
+                        (sets env variable DELEGATEPRC=1)
 
-                        DELEGATEPRCPRL :  It uses an Explicit fork, then divide and conquer, and 
-			then a parallel ready loop for the remaining iteration. (sets environment variable DELEGATEPRCPRL=1)
-
+                        DELEGATEPRCPRL :  It uses an Explicit fork, 
+                        then PRC, and then PRL for the remaining iteration. 
+                        (sets environment variable DELEGATEPRCPRL=1)
 
   --ifile IFILE         Input file
   -v, --verbose         Verbose
   --dryrun              Dry run, only print commands that would be executed
-  --wait_load WAIT_LOAD
-                        The minimum load before the benchmark can be executed (Default=10)
+  --wait_load WAIT_LOAD The minimum load before the benchmark can be executed (Default=10)
 
 ```
 
