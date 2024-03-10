@@ -3,7 +3,7 @@
 LazyD is a compiler and runtime for programs written in Cilk.  The
 compiler converts fork-join and parallel-for constructs into low
 overhead parallel-ready sequential code.  Parallelism is realized via
-work stealing.  Hence, the control overhead of managing parallel
+work request.  Hence, the control overhead of managing parallel
 constructs is virtually eliminated when parallelism is not needed.
 LazyD attempts to improve the performance of a parallel program when
 the overhead of the parallel construct is significant and when using a
@@ -32,7 +32,7 @@ docker run --privileged -v <host_directory>:/home/user/lazyDir -it cpakha/lazydc
 
 We recommend the following options with the docker run command:
 
-- --user=<uid>:<gid> This will set the user ID to <uid> and the group ID to <gid>. 
+- --user=<uid>:<gid> This will set the user ID to <uid> and the group ID to <gid>.
 - --rm Remove the container once the docker has been exited
 
 3. Setting up the folders:
@@ -85,11 +85,11 @@ lazyDir:
 
   - common/parallelDefs: Contains different compiler options that affect the lowering of parallel-for and fork-join.
 
-  - parlay/internal/scheduler_plugins/opencilk.h : Contains the implementation of different scheduling mechanism for parallel-for. 
+  - parlay/internal/scheduler_plugins/opencilk.h : Contains the implementation of different scheduling mechanism for parallel-for.
 
 # Evaluating LazyD Performance
 
-We claim that LazyD has 
+We claim that LazyD has
 
 1) LazyD’s parallel construct has a smaller overhead compared to OpenCilk's.
 2) Exposing more parallelism using LazyD does not degrade performance on average.
@@ -103,7 +103,74 @@ To evaluate our claim, run the following command in the lazyDir/cilkbench direct
 /home/user/lazyDir/cilkbench/run-icache.sh <Number of workers> <Number of runs> <disable numa>
 ```
 
-**Provide valid options either here or with -h in the .sh command**
+The above script relies on the testBenchmark_compile.py script.
+The following are the flags that testBenchmark_compile.py supports:
+
+```console
+options:
+  -h, --help            show this help message and exit
+  --compile             Only compile the benchmark
+  --num_cores NUM_CORES [NUM_CORES ...]
+                        Number of cores used. Default: 1
+  --num_tests NUM_TESTS
+                        Number of runs per test
+  --execute             Only execute benchmark, do not compile
+  --disable_numa        Do not use numactl --interleave=all when running the benchmark
+  --icache              Run the icache experiment
+  --parallel_framework {lazyd0,lazyd2,nopoll,serial,tapir} [{lazyd0,lazyd2,nopoll,serial,tapir} ...]
+                        The parallel framework to use. Default: tapir.
+
+			lazyd0 = LazyD with infrequent polling (sets env variable POLL0=1)
+                        lazyd2 = LazyD with frequent polling   (sets env variable POLL2=1)
+                        nopoll = LazyD without polling         (sets env variable NOPOLL=1)
+                        serial = Sequential program            (sets env variable SEQUENTIAL=1)
+                        tapir = OpenCilk program               (sets env variable OPENCILK=1)
+
+  --fg {yes,no,both}    Use finer grainsize. Default: no
+                        If --noopt is false, user grainsize does not get affected.
+                        Only used by PRC, PRL, DELEGATEPRC, PRCPRL, DELEGATEPRCPRL,
+                        and OPENCILKDEFAULT_FINE.  (sets env variable GRAINSIZE8=1)
+
+  --noopt {yes,no,both}
+                         Ignore parallel-for's grainsize set by user. Default: no
+                         Only used in PBBS and DELEGATEPRCPRL.  (sets env variable NOOPT=1)
+
+  --schedule_tasks {PRC,PRL,DELEGATEPRC,PRCPRL,DELEGATEPRCPRL,OPENCILKDEFAULT_FINE,PBBS} [{PRC,PRL,DELEGATEPRC,PRCPRL,DELEGATEPRCPRL,OPENCILKDEFAULT_FINE,PBBS} ...]
+                        How to schedule parallel task in pfor. Only valid for the PBBSv2 benchmarks.
+
+                        PBBS : By default is uses the PBBS default sceheduling mechanism.
+                        The PBBS default scheduling mechanism uses divide and conquer
+                        if user set grainsize.
+                        If grainsize is set to 0, it uses cilk_for parallel construct.
+
+                        OPENCILKDEFAULT_FINE: Similar to PBBS, however if grainsize is set to 0,
+                        the maximum grainsize is set to 8 (Default is 2048).
+                        (sets environment variable OPENCILKDEFAULT_FINE=1)
+
+                        PRC: Similar to PBBS except that we manually lower the cilk_for in source code
+                        using tail recursion eliminiation version of divide and conquer.
+                        (sets environment variable PRC=1)
+
+                        PRL: Use parallel-ready loop to lower the parallel-for. (sets env variable PRL=1)
+
+                        PRCPRL : Uses divide and conquer and then parallel-ready loop
+                        for the remaining iteration. (sets env variable PRCPRL=1)
+
+                        DELEGATEPRC : Uses explicit fork and then divide and conquer
+                        for the remaining iteration.  (sets env variable DELEGATEPRC=1)
+
+                        DELEGATEPRCPRL : Uses Explicit fork and then divide and conquer
+                        and then parallel ready loop for the remaining iteration.
+                        (sets environment variable DELEGATEPRCPRL=1)
+
+
+  --ifile IFILE         Input file
+  -v, --verbose         Verbose
+  --dryrun              Dry run, only print commands that would be executed
+  --wait_load WAIT_LOAD
+                        The minimum load before the benchmark can be executed (Default=10)
+
+```
 
 This will generate the data needed for our claim in artifact.pdf
 
@@ -129,8 +196,7 @@ Running the program can be done by simply executing:
 # Limitation
 
 - LazyD is only able to compile cilk_for, cilk_spawn, and cilk_sync. It is not able to compile OpenCilk's hyberobject.
-- LazyD Parallel-Ready Loop is not the default lowering of parallel-for and needs to be enabled using -fpfor-spawn-strategy=2.
-- LazyD Parallel-Ready Loop has an issue in dealing with non-AddRec Scalar evolution.  what does **has an issue** mean?
-- **do we need this first sentence?** There are still bugs when compiling complicated Cilk code. For that reason, LazyD has to turn off certain compiler features.
-- There are still cases where it may fail to compile complex fork-joins or parallel-for. For a quick fix, isolate these fork-joins or parallel-for into their own function.
- 
+- LazyD's Parallel-Ready Loop is not the default lowering of parallel-for and needs to be enabled using -fpfor-spawn-strategy=2.
+- LazyD can not convert parallel loops with non-Add Recurrence evolution.
+- LazyD can not compile a parallel region inlined inside another parallel region. For this reason, LazyD prevents the inliner from inlining a function that contains a parallel region into another parallel region.
+- There are still cases where LazyD may fail to compile complex fork-joins or parallel-for. For a quick fix, isolate these fork-joins or parallel-for into their own function.
