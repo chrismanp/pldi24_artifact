@@ -107,7 +107,11 @@ To evaluate our claim, run the following command in the lazyDir/cilkbench direct
 /home/user/lazyDir/cilkbench/run-icache.sh <Number of workers> <Number of runs> <disable numa>
 ```
 
-The above script relies on the testBenchmark_compile.py script.
+This will generate the data needed for our claim in [artifact-desc](artifact-desc.pdf).
+Refer to [artifact-desc](artifact-desc.pdf) to test our claim.
+
+# testBenchmark_compile.py's Flags
+The run-eval.sh and run-icache.sh relies on the testBenchmark_compile.py script.
 The following are the flags that testBenchmark_compile.py supports:
 
 ```console
@@ -178,9 +182,6 @@ options:
   --wait_load WAIT_LOAD The minimum load before the benchmark can be executed (Default=10)
 
 ```
-
-This will generate the data needed for our claim in [artifact-desc](artifact-desc.pdf).
-Refer to [artifact-desc](artifact-desc.pdf) to test our claim.
 
 # Compile your own code
 If users are interested in evaluating LazyD performance on their own Cilk code, use the following command:
