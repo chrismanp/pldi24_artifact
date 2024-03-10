@@ -1,14 +1,3 @@
-# Cilk benchmark
-cilk5,cilksort,cilksort,,cilksort,,"-n 800000  -r ","-n 800000  -r "
-cilk5,heat,heat,,heat,,"-nx 2048 -ny 2048 -nt 200 -r ","-nx 2048 -ny 2048 -nt 200 -r "
-cilk5,matmul,matmul,,matmul,,"-n 3200  -r ","-n 3200  -r "
-cilk5,nqueens,nqueens,,nqueens,,"13 ","13 "
-cilk5,strassen,strassen,,strassen,,"-n 2048 -r ","-n 2048  -r "
-cilk5,lu,lu,,lu,,"-n 4096  -r ","-n 4096  -r "
-cilk5,fib,fib,,fib,,"42 ","30 "
-cilk5,rectmul,rectmul,,rectmul,,"-x 4096 -y 4096 -z 2048  -r ","-x 4096 -y 4096 -z 2048  -r "
-cilk5,fft,fft,,fft,,"-n 10000000  -r ","-n 10000000 -r "
-cilk5,cholesky,cholesky,,cholesky,,"-n 4000 -z 8000  -r ","-n 4000 -z 8000  -r "
 # PBBS_v2
 pbbs_v2,delaunayTriangulation/incrementalDelaunay,delaunay,delaunayCheck,geometryData,"","2DinCube_1000000"
 pbbs_v2,invertedIndex/parallel,index,indexCheck,sequenceData,"","wikipedia250M.txt"

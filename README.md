@@ -147,12 +147,13 @@ options:
 
                         OPENCILKDEFAULT_FINE: Similar to PBBS. 
                         However, if the grainsize is set to 0, 
-			the maximum grainsize is set to 8 (Default is 2048).
+			the maximum grainsize is set to 8 
+			(Default value used by PBBS is 2048).
                         (sets environment variable OPENCILKDEFAULT_FINE=1)
 
                         PRC: Similar to PBBS, except that we manually 
-                        lower the cilk_for in source code using the tail recursion 
-                        elimination version of divide and conquer.
+                        lower the cilk_for in the source code using divide and conquer
+			with tail call elimination.
                         (sets environment variable PRC=1)
 
                         PRL: Use parallel-ready loop to lower the parallel-for. 
@@ -165,7 +166,7 @@ options:
                         for the remaining iteration.
                         (sets env variable DELEGATEPRC=1)
 
-                        DELEGATEPRCPRL :  It uses an Explicit fork, 
+                        DELEGATEPRCPRL :  Uses Explicit fork, 
                         then PRC, and then PRL for the remaining iteration. 
                         (sets environment variable DELEGATEPRCPRL=1)
 

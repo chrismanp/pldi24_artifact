@@ -243,13 +243,13 @@ def runcmd(cmd, timeout, error_handler):
 
     p_process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
-        out, err = p_process.communicate(timeout)
-        dump_string(out.decode("utf-8"), 0, verbose)
-        dump_string(err.decode("utf-8"), 1, verbose)
-        out = str(out)
-        err = str(err)
+        outb, errb = p_process.communicate(timeout)
+        dump_string(outb.decode("utf-8"), 0, verbose)
+        dump_string(errb.decode("utf-8"), 1, verbose)
+        out = str(outb)
+        err = str(errb)
         status, error_string = error_handler(p_process, out, err)
-        return status, error_string, out, err
+        return status, error_string, out, errb
     except subprocess.TimeoutExpired:
         logging.warning("\nCompilation timed out\n")
         p_process.kill()
@@ -324,7 +324,11 @@ def maybeRename(old, new):
         dump_string(f"Command: rename {old} -> {new}", 0, 1)
         return
     dump_string(f"Command: rename {old} -> {new}", 0, verbose)
-    os.rename(old, new)
+    try:
+        os.rename(old, new)
+    except OSError as error:
+        print(error)
+
 
 # generates an exe suffix for options.
 # Some combinations don't make sense, for those return False
@@ -499,8 +503,7 @@ def run_benchmark_cilk5(lazy_benchmark_options, suffix, benchmark_obj, num_cores
 
     icache_cmd = ""
     if (lazy_benchmark_options.measure_icache):
-        icache_cmd = "perf stat -x, -e icache.misses,icache.hit -a"
-
+        icache_cmd = "perf stat -x, -e icache.misses,icache.hit"
 
     binary = f"NAIVE_MAPPING=1 CILK_NWORKERS={num_cores} {numa_cmd} {icache_cmd}  ./{benchmark_obj.binary}.{suffix}"
 
@@ -548,7 +551,7 @@ def run_benchmark_pbbs_v2(lazy_benchmark_options, suffix, benchmark_obj, num_cor
 
     # add icache perf if needed
     if lazy_benchmark_options.measure_icache:
-        cmd.append("perf stat -x, -e icache.misses,icache.hit -a")
+        cmd.append("perf stat -x, -e icache.misses,icache.hit")
 
     # actually binary we are testing
     cmd.append(f"./{benchmark_obj.binary}.{suffix}")
@@ -581,14 +584,12 @@ def run_benchmark_pbbs_v2(lazy_benchmark_options, suffix, benchmark_obj, num_cor
                 res_time.append(float(pbbs_time_str_elem_split[1]))
 
         if(lazy_benchmark_options.measure_icache):
-            pbbs_icache_str = str(out)
-            pbbs_icache_str_arr = pbbs_icache_str.split('\\n')
+            pbbs_icache_str = str(err.decode("utf-8"))
+            pbbs_icache_str_arr = pbbs_icache_str.splitlines()
             pbbs_icache_str_split = [s for s in pbbs_icache_str_arr if "icache" in s];
-
             for pbbs_icache_str_elem in pbbs_icache_str_split:
                 pbbs_icache_str_elem_split = pbbs_icache_str_elem.split(",")
                 res_time.append(float(pbbs_icache_str_elem_split[0]))
-
 
         if(lazy_benchmark_options.measure_promotedtask):
             pbbs_icache_str = str(out)
@@ -765,6 +766,18 @@ def main():
     logging.basicConfig(filename=output_dir+ "/" + 'log.txt', level=logging.DEBUG, format='')
 
     # Write category names on first row.
+
+    #for i in range(0, lazy_benchmark_options.num_tests-1):
+    #    results_file_categories.append(f"Time {i}")
+
+    #results_file_categories.append("Error Message")
+    #ERROR_MSG = len(results_file_categories)-1
+
+    # If icache experiment is enabled, append the last two column with icache misses and icache hits
+    #if (lazy_benchmark_options.measure_icache):
+    #    results_file_categories.append("Icache Misses")
+    #    results_file_categories.append("Icache Hits")
+
     csv_writer.writerow(results_file_categories)
 
     if test_cores == []:

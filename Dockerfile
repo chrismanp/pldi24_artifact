@@ -33,18 +33,28 @@ RUN mv ../cilk5 cilk5
 ADD lazybenchmark.csv           /home/user/cilkbench
 ADD lazybenchmark_big.csv       /home/user/cilkbench
 ADD justmis.csv                 /home/user/cilkbench
+ADD cilk5benchmark.csv          /home/user/cilkbench
 ADD parse_lazybenchmark_csv.py  /home/user/cilkbench
 ADD testBenchmark_compile.py    /home/user/cilkbench
 
-ADD configureTests.sh /home/user/cilkbench
-ADD parseArgs.sh      /home/user/cilkbench
-ADD testCilk.sh       /home/user/cilkbench
-ADD compile-cilk.sh   /home/user/cilkbench
-ADD rm-all-exes.sh    /home/user/cilkbench
-ADD run-eval.sh       /home/user/cilkbench
+ADD configureTests.sh         /home/user/cilkbench
+ADD parseArgs.sh              /home/user/cilkbench
+ADD testCilk.sh               /home/user/cilkbench
+ADD compile-cilk.sh           /home/user/cilkbench
+ADD rm-all-exes.sh            /home/user/cilkbench
+ADD run-eval.sh               /home/user/cilkbench
+ADD run-eval-big.sh	      /home/user/cilkbench
+ADD run-icache.sh             /home/user/cilkbench
+ADD run-icache-big.sh         /home/user/cilkbench
+ADD analyzecsv.py             /home/user/cilkbench
+ADD artifact-desc.pdf         /home/user/cilkbench
+ADD README.md                 /home/user/cilkbench
 
 RUN chmod +x          /home/user/cilkbench/testCilk.sh
 RUN chmod +x          /home/user/cilkbench/run-eval.sh
+RUN chmod +x          /home/user/cilkbench/run-eval-big.sh
+RUN chmod +x          /home/user/cilkbench/run-icache.sh
+RUN chmod +x          /home/user/cilkbench/run-icache-big.sh
 
 # From cilk5's Makefile
 ADD Makefile          /home/user/cilkbench/cilk5
