@@ -3,7 +3,7 @@
 LazyD is a compiler and runtime for programs written in Cilk.  The
 compiler converts fork-join and parallel-for constructs into low
 overhead parallel-ready sequential code.  Parallelism is realized via
-work request.  Hence, the control overhead of managing parallel
+work requests.  Hence, the control overhead of managing parallel
 constructs is virtually eliminated when parallelism is not needed.
 LazyD attempts to improve the performance of a parallel program when
 the overhead of the parallel construct is significant and when using a
@@ -14,8 +14,8 @@ compiler and takes advantage of Tapir.
 
 # Trying LazyD on a Docker
 
-We provide a docker image so users to try out LazyD on their own Cilk
-code.  The following are the instructions for setting up the docker
+We provide a docker image so users can try out LazyD using their own Cilk code.  
+The following are the instructions for setting up the docker
 image.
 
 1. Pulling the docker image :
@@ -47,7 +47,7 @@ This sets up the directory needed for evaluation in the host directory (/home/us
 
 After running `setup.sh`, [lazyDir](./lazyDir) will contain three
 directories: cilkbench, opencilk, and pbbsbench.  The following are
-the directories that users are most likely to interact with in
+the directories that users are most likely to interact within
 lazyDir:
 
 - cilkbench: The cilkbench is the directory where users evaluate LazyD's performance
@@ -63,7 +63,7 @@ lazyDir:
 
   - rm-all-exes.sh : Removes the generated binaries during compilation.
 
-  - run-eval.sh : Evaluates the performance of LazyD and OpenCilk on the Cilk5 and PBBSv2 benchmarks.
+  - run-{eval,icache}.sh : Evaluates the performance of LazyD and OpenCilk on the Cilk5 and PBBSv2 benchmarks.
 
   - oDir/ : Stores the result of the executing the testBenchmark_compile.py
 
@@ -72,6 +72,8 @@ lazyDir:
   - oDir/lazybenchmark_output_files*/log.txt : Logs the execution of testBenchmark_compile.py.
 
   - lazybenchmark.csv : Stores the benchmark that testBenchmark_compile.py used to compile and execute.
+
+  - analyzecsv.py : Analyze the result from running run-{eval,icache}.sh
 
 - pbbsbench
 
@@ -93,8 +95,8 @@ We claim that LazyD has
 
 1) LazyD’s parallel construct has a smaller overhead compared to OpenCilk's.
 2) Exposing more parallelism using LazyD does not degrade performance on average.
-3) For programs with irregular parellelism, LazyD prevents load imbalance by exposing more parallelism.
-4) LazyD does not adversly impact the I-Cache miss rate.
+3) For programs with irregular parallelism, LazyD prevents load imbalance by exposing more parallelism.
+4) LazyD does not adversely impact the I-Cache miss rate.
 
 To evaluate our claim, run the following command in the lazyDir/cilkbench directory:
 
