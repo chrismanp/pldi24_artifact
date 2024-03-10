@@ -12,6 +12,8 @@ It relies on stack-walking, code-versioning, and polling to generate
 low-overhead parallel constructs.  It is built on top of the OpenCilk
 compiler and takes advantage of Tapir.
 
+Refer to [artifact-desc](artifact-desc.pdf) for a full description of our artifacts.
+
 # Trying LazyD on a Docker
 
 We provide a docker image so users can try out LazyD using their own Cilk code.  
