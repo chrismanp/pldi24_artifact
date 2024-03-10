@@ -83,8 +83,8 @@ The following are the directories that users most likely interact in lazyDir:
 
 We claim that LazyD has 
 
-1) LazyD’s parallel construct has a smaller overhead compared to OpenCilk
-2) Exposing more parallelism using LazyD’s does not significantly degrade performance.
+1) LazyD’s parallel construct has a smaller overhead compared to OpenCilk's.
+2) Exposing more parallelism using LazyD’s does not significantly degrade performance on average.
 3) LazyD prevents load imbalance by exposing more parallelism.
 4) LazyD’s ICache miss rate is similar to OpenCilk’s.
 
