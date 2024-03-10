@@ -59,7 +59,7 @@ lazyDir:
   - pbbs_v2/: Contains the PBBSv2 benchmark. It is a soft link to pbbsbench/benchmarks.
 
   - testBenchmark_compile.py : Script to compile and run Cilk5 and PBBSv2 benchmarks.
-    			       Refer to our artifact.pdf on how to use the compiler and scripts.
+    			       Refer to our [artifact-desc](artifact-desc.pdf) on how to use the compiler and scripts.
 
   - compile-cilk.sh and testCilk.sh : Compiles the Cilk5 benchmarks.
 
@@ -179,7 +179,8 @@ options:
 
 ```
 
-This will generate the data needed for our claim in artifact.pdf
+This will generate the data needed for our claim in [artifact-desc](artifact-desc.pdf).
+Refer to [artifact-desc](artifact-desc.pdf) to test our claim.
 
 # Compile your own code
 If users are interested in evaluating LazyD performance on their own Cilk code, use the following command:
@@ -192,8 +193,7 @@ If users are interested in evaluating LazyD performance on their own Cilk code, 
         -Wall -O3  yourcilkcode.c   -o yourcilkcode
 ```
 
-The artifact.pdf provides an exhaustive list of the compiler's options.
-Currently, lazyD still depends on the opencilk-resource-dir parameter for locating the cilk header.
+The [artifact-desc](artifact-desc.pdf) provides a list of the compiler's options.
 Running the program can be done by simply executing:
 
 ```console
