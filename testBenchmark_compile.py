@@ -134,7 +134,7 @@ class CompilerOptions:
         return CilkLowering.getDescription(self.cilk_lowering)
 
 class LazyBenchmarkOptions(object):
-    def __init__(self, compile_only, execute_only, num_cores, num_tests, benchmarks_to_run, cilk_lowering, task_scheduler, noopt, finergrainsize, measure_icache, measure_promotedtask, disable_numa, verbose, dry_run, wait_load):
+    def __init__(self, compile_only, execute_only, num_cores, num_tests, benchmarks_to_run, cilk_lowering, task_scheduler, noopt, finergrainsize, measure_icache, measure_promotedtask, disable_numa, verbose, dry_run, wait_load, disable_pinning):
         self.compile_only = compile_only
         self.execute_only = execute_only
         self.num_cores = num_cores
@@ -150,6 +150,11 @@ class LazyBenchmarkOptions(object):
         self.verbose = verbose
         self.dry_run = dry_run
         self.wait_load = wait_load
+        if(disable_pinning):
+            self.nv = 0
+        else:
+            self.nv = 1
+
 
     def get_cilklowering_str(self) :
         return CilkLowering.getDescription(self.cilk_lowering)
@@ -189,6 +194,7 @@ parser.add_argument("--ifile", default="lazybenchmark.csv", help="Input file")
 parser.add_argument("-v", "--verbose", action='store_true', help="Verbose")
 parser.add_argument("--dryrun", action='store_true', help="Dry run, only print commands that would be executed")
 parser.add_argument("--wait_load", default=10, type=int, help="The minimum load to execute the benchmark (Default=10)")
+parser.add_argument("--disable_pinning", action='store_true', help="Disable worker pinning for LazyD")
 
 # parse arguments
 flags = parser.parse_args()
@@ -206,6 +212,7 @@ parallel_framework = flags.parallel_framework
 task_scheduler = flags.schedule_tasks
 verbose = flags.verbose
 dry_run = flags.dryrun
+disable_pinning = flags.disable_pinning
 cilk_lowering = CilkLowering.strs2enums(parallel_framework)
 
 # display progress (unless doing dryrun or verbose)
@@ -494,6 +501,8 @@ def run_benchmark(lazy_benchmark_options, suffix, benchmark_obj, num_cores, outp
         assert(0);
 
 def run_benchmark_cilk5(lazy_benchmark_options, suffix, benchmark_obj, num_cores, output_file, input_file):
+    nv = lazy_benchmark_options.nv
+
     # run_cmd is the commmand to run the benchmark.
     goto_dir =  "cd " + benchmark_obj.benchmark_name
 
@@ -505,7 +514,7 @@ def run_benchmark_cilk5(lazy_benchmark_options, suffix, benchmark_obj, num_cores
     if (lazy_benchmark_options.measure_icache):
         icache_cmd = "perf stat -x, -e icache.misses,icache.hit"
 
-    binary = f"NAIVE_MAPPING=1 CILK_NWORKERS={num_cores} {numa_cmd} {icache_cmd}  ./{benchmark_obj.binary}.{suffix}"
+    binary = f"NAIVE_MAPPING={nv} CILK_NWORKERS={num_cores} {numa_cmd} {icache_cmd}  ./{benchmark_obj.binary}.{suffix}"
 
     arguments = input_file + " " + str(lazy_benchmark_options.num_tests)
     run_cmd = goto_dir + " && " + binary + " " + arguments
@@ -540,10 +549,11 @@ def run_benchmark_pbbs_v2(lazy_benchmark_options, suffix, benchmark_obj, num_cor
     # directory where we run benchmark
     gotodir = f"cd {benchmark_obj.benchmark_name}/{benchmark_obj.name}"
 
+    nv = lazy_benchmark_options.nv
     # common options to all runs
     cmd = [gotodir,
            "&&",
-           "NAIVE_MAPPING=1",
+           f"NAIVE_MAPPING={nv}",
            f"CILK_NWORKERS={num_cores}",
            "LD_LIBRARY_PATH=../../../opencilk/cheetah/build/lib/x86_64-unknown-linux-gnu/",
            "" if lazy_benchmark_options.disable_numa else "numactl --interleave=all"
@@ -751,7 +761,7 @@ def main():
     results_file = "lazybenchmark_results.csv"
 
     print(f"Will put results and log files in {output_dir}")
-    lazy_benchmark_options = LazyBenchmarkOptions(compile_only, execute_only, num_cores, num_tests, benchmarks_to_run, cilk_lowering, task_scheduler, noopt, finergrainsize, measure_icache, False, disable_numa, verbose, dry_run, wait_load);
+    lazy_benchmark_options = LazyBenchmarkOptions(compile_only, execute_only, num_cores, num_tests, benchmarks_to_run, cilk_lowering, task_scheduler, noopt, finergrainsize, measure_icache, False, disable_numa, verbose, dry_run, wait_load, disable_pinning);
 
 
     # Number of cores for which benchmarks should be tested.
@@ -766,18 +776,6 @@ def main():
     logging.basicConfig(filename=output_dir+ "/" + 'log.txt', level=logging.DEBUG, format='')
 
     # Write category names on first row.
-
-    #for i in range(0, lazy_benchmark_options.num_tests-1):
-    #    results_file_categories.append(f"Time {i}")
-
-    #results_file_categories.append("Error Message")
-    #ERROR_MSG = len(results_file_categories)-1
-
-    # If icache experiment is enabled, append the last two column with icache misses and icache hits
-    #if (lazy_benchmark_options.measure_icache):
-    #    results_file_categories.append("Icache Misses")
-    #    results_file_categories.append("Icache Hits")
-
     csv_writer.writerow(results_file_categories)
 
     if test_cores == []:

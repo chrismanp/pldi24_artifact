@@ -267,10 +267,8 @@ def getresult(input_file):
     if(dataset not in list_of_results[name_of_impl][benchname]):
         list_of_results[name_of_impl][benchname][dataset] = {}
         
-    
-    if(err in ["Verification failed", "Benchmark failed to run"]):
-        num_time = a = [-1] * len(time)
-    else:
+    num_time = [-1] * len(time)
+    if(not (err in ["Verification failed", "Benchmark failed to run"])):
         num_time = [ float(val) if val or val.isnumeric() else -1 for val in time]
 
     list_of_results[name_of_impl][benchname][dataset][num_cores] = (num_time)
